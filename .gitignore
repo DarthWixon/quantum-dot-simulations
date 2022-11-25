@@ -1,0 +1,6 @@
+data/
+graphs/
+testing
+*.png
+*.npz
+*.npy
