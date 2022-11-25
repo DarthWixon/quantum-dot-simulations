@@ -1,0 +1,75 @@
+---------------------------------
+Using Checkovich 2018/19 GET Data in Region [450, 850, 550, 650]
+Ga69 has: mean = -1.14 MHz & std_dev = 0.26 MHz, with R2 = 0.98
+Ga71 has: mean = 0.99 MHz & std_dev = 0.24 MHz, with R2 = 0.97
+As75 has: mean = 3.39 MHz & std_dev = 0.91 MHz, with R2 = 0.92
+In115 has: mean = 1.0 MHz & std_dev = 0.23 MHz, with R2 = 0.98
+---------------------------------
+Using Sundfors 1974 GET Data in Region [450, 850, 550, 650]
+Ga69 has: mean = 1.6 MHz & std_dev = 0.38 MHz, with R2 = 0.97
+Ga71 has: mean = 0.99 MHz & std_dev = 0.24 MHz, with R2 = 0.97
+/home/will/anaconda3/envs/work/lib/python3.8/site-packages/scipy/optimize/minpack.py:807: OptimizeWarning: Covariance of the parameters could not be estimated
+  warnings.warn('Covariance of the parameters could not be estimated',
+As75 has: mean = 0.0 MHz & std_dev = 0.2 MHz, with R2 = -1.95
+In115 has: mean = 1.0 MHz & std_dev = 0.23 MHz, with R2 = 0.98
+---------------------------------
+Using Checkovich 2018/19 GET Data in Region [20, 420, 650, 750]
+Ga69 has: mean = -1.03 MHz & std_dev = 0.36 MHz, with R2 = 0.94
+Ga71 has: mean = 0.83 MHz & std_dev = 0.25 MHz, with R2 = 0.95
+As75 has: mean = 2.47 MHz & std_dev = 0.6 MHz, with R2 = 0.98
+In115 has: mean = 0.89 MHz & std_dev = 0.3 MHz, with R2 = 0.94
+---------------------------------
+Using Sundfors 1974 GET Data in Region [20, 420, 650, 750]
+Ga69 has: mean = 1.34 MHz & std_dev = 0.41 MHz, with R2 = 0.95
+Ga71 has: mean = 0.83 MHz & std_dev = 0.25 MHz, with R2 = 0.95
+As75 has: mean = 4.06 MHz & std_dev = 0.98 MHz, with R2 = 0.98
+In115 has: mean = 0.89 MHz & std_dev = 0.3 MHz, with R2 = 0.94
+---------------------------------
+Using Checkovich 2018/19 GET Data in Region [1010, 1410, 650, 750]
+Ga69 has: mean = -0.49 MHz & std_dev = 0.32 MHz, with R2 = 0.91
+Ga71 has: mean = 0.42 MHz & std_dev = 0.2 MHz, with R2 = 0.89
+As75 has: mean = 1.36 MHz & std_dev = 0.64 MHz, with R2 = 0.91
+In115 has: mean = 0.43 MHz & std_dev = 0.25 MHz, with R2 = 0.9
+---------------------------------
+Using Sundfors 1974 GET Data in Region [1010, 1410, 650, 750]
+Ga69 has: mean = 0.68 MHz & std_dev = 0.33 MHz, with R2 = 0.89
+Ga71 has: mean = 0.42 MHz & std_dev = 0.2 MHz, with R2 = 0.89
+As75 has: mean = -0.12 MHz & std_dev = 0.01 MHz, with R2 = -0.57
+In115 has: mean = 0.43 MHz & std_dev = 0.25 MHz, with R2 = 0.9
+---------------------------------
+Using Checkovich 2018/19 GET Data in Region [450, 850, 660, 760]
+Ga69 has: mean = -0.79 MHz & std_dev = 0.21 MHz, with R2 = 0.95
+Ga71 has: mean = 0.68 MHz & std_dev = 0.18 MHz, with R2 = 0.98
+As75 has: mean = 2.2 MHz & std_dev = 0.76 MHz, with R2 = 0.91
+In115 has: mean = 0.69 MHz & std_dev = 0.18 MHz, with R2 = 0.96
+---------------------------------
+Using Sundfors 1974 GET Data in Region [450, 850, 660, 760]
+Ga69 has: mean = 1.1 MHz & std_dev = 0.3 MHz, with R2 = 0.98
+Ga71 has: mean = 0.68 MHz & std_dev = 0.18 MHz, with R2 = 0.98
+As75 has: mean = 3.61 MHz & std_dev = 1.26 MHz, with R2 = 0.91
+In115 has: mean = 0.69 MHz & std_dev = 0.18 MHz, with R2 = 0.96
+---------------------------------
+Using Checkovich 2018/19 GET Data in Region [100, 1200, 200, 1000]
+Ga69 has: mean = -1.03 MHz & std_dev = 0.7 MHz, with R2 = 0.92
+Ga71 has: mean = 0.39 MHz & std_dev = 0.24 MHz, with R2 = 0.94
+As75 has: mean = 1.39 MHz & std_dev = 0.83 MHz, with R2 = 0.96
+In115 has: mean = 0.37 MHz & std_dev = 0.25 MHz, with R2 = 0.91
+---------------------------------
+Using Sundfors 1974 GET Data in Region [100, 1200, 200, 1000]
+Ga69 has: mean = 0.63 MHz & std_dev = 0.38 MHz, with R2 = 0.94
+Ga71 has: mean = 0.39 MHz & std_dev = 0.24 MHz, with R2 = 0.94
+As75 has: mean = 2.29 MHz & std_dev = 1.36 MHz, with R2 = 0.96
+In115 has: mean = 0.37 MHz & std_dev = 0.25 MHz, with R2 = 0.91
+---------------------------------
+Using Checkovich 2018/19 GET Data in Region [100, 1200, 439, 880]
+Ga69 has: mean = -1.3 MHz & std_dev = 0.72 MHz, with R2 = 0.95
+Ga71 has: mean = 0.54 MHz & std_dev = 0.28 MHz, with R2 = 0.95
+As75 has: mean = 1.8 MHz & std_dev = 0.86 MHz, with R2 = 0.97
+In115 has: mean = 0.54 MHz & std_dev = 0.32 MHz, with R2 = 0.94
+---------------------------------
+Using Sundfors 1974 GET Data in Region [100, 1200, 439, 880]
+Ga69 has: mean = 0.87 MHz & std_dev = 0.44 MHz, with R2 = 0.95
+Ga71 has: mean = 0.54 MHz & std_dev = 0.28 MHz, with R2 = 0.95
+As75 has: mean = 2.97 MHz & std_dev = 1.41 MHz, with R2 = 0.97
+In115 has: mean = 0.54 MHz & std_dev = 0.32 MHz, with R2 = 0.94
+---------------------------------
