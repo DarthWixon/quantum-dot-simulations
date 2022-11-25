@@ -4,3 +4,4 @@ testing
 *.png
 *.npz
 *.npy
+*.ipynb
