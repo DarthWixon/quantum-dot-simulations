@@ -1,6 +1,7 @@
 data/
 graphs/
 testing
+venvs/
 *.png
 *.npz
 *.npy
