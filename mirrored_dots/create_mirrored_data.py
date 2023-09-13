@@ -1,17 +1,19 @@
 import sys
+
 sys.path.append("/home/will/Documents/phd/research/simulations/common_modules/")
 
 from backbone_quadrupolar_functions import data_path
 
 import numpy as np
 
-def load_region_of_sokolov_data(region_bounds = [100, 1200, 200, 1000], step_size = 1):
+
+def load_region_of_sokolov_data(region_bounds=[100, 1200, 200, 1000], step_size=1):
     """
     Loads the full set of epsilon data from Sokolov, and packages it in a neat format.
 
     These datasets have different names according to the naming conventions
-    that Sokolov puts in their paper. It's mainly a code error carried forward that 
-    meant that the saved data has a weird file name. 
+    that Sokolov puts in their paper. It's mainly a code error carried forward that
+    meant that the saved data has a weird file name.
     The correct output labels are xx, xz and zz. These are the axes along which
     strain is measured in the paper.
     Paper these data are from (DOI): 10.1103/PhysRevB.93.045301
@@ -35,20 +37,23 @@ def load_region_of_sokolov_data(region_bounds = [100, 1200, 200, 1000], step_siz
     """
 
     # these full_epsilon_AA datasets are 1600x1600 arrays
-    full_xx_data = np.loadtxt(f"{data_path}full_epsilon_xx.txt") 
-    full_xy_data = np.loadtxt(f"{data_path}full_epsilon_xy.txt") 
+    full_xx_data = np.loadtxt(f"{data_path}full_epsilon_xx.txt")
+    full_xy_data = np.loadtxt(f"{data_path}full_epsilon_xy.txt")
     full_yy_data = np.loadtxt(f"{data_path}full_epsilon_yy.txt")
 
     H_1, H_2, L_1, L_2 = region_bounds
 
     # slice out range of data we want, slicing syntax is [start:stop:step]
-    region_epsilon_xx = full_xx_data[L_1:L_2:step_size,H_1:H_2:step_size]
-    region_epsilon_xz = -full_xy_data[L_1:L_2:step_size,H_1:H_2:step_size]
-    region_epsilon_zz = -full_yy_data[L_1:L_2:step_size,H_1:H_2:step_size]
+    region_epsilon_xx = full_xx_data[L_1:L_2:step_size, H_1:H_2:step_size]
+    region_epsilon_xz = -full_xy_data[L_1:L_2:step_size, H_1:H_2:step_size]
+    region_epsilon_zz = -full_yy_data[L_1:L_2:step_size, H_1:H_2:step_size]
 
     return region_epsilon_xx, region_epsilon_xz, region_epsilon_zz
 
-def load_In_concentration_data(region_bounds = [100, 1200, 200, 1000], step_size = 1, method = "cubic"):
+
+def load_In_concentration_data(
+    region_bounds=[100, 1200, 200, 1000], step_size=1, method="cubic"
+):
     """
     Loads the interpolated concentration data from Sokolov.
 
@@ -75,65 +80,85 @@ def load_In_concentration_data(region_bounds = [100, 1200, 200, 1000], step_size
     H_1, H_2, L_1, L_2 = region_bounds
 
     # slice out range of data we want, slicing syntax is [start:stop:step]
-    region_conc_data = full_conc_data[L_1:L_2:step_size,H_1:H_2:step_size]
+    region_conc_data = full_conc_data[L_1:L_2:step_size, H_1:H_2:step_size]
 
     return region_conc_data
 
+
 def mirror_array_left_to_right(data_array):
-	
-	left_half = data_array[:, 0:int(data_array.shape[1]/2)]
+    left_half = data_array[:, 0 : int(data_array.shape[1] / 2)]
 
-	right_half = np.fliplr(left_half)
+    right_half = np.fliplr(left_half)
 
-	left_right_symmetric_array = np.hstack([left_half, right_half])
+    left_right_symmetric_array = np.hstack([left_half, right_half])
 
-	return left_right_symmetric_array
+    return left_right_symmetric_array
+
 
 def mirror_array_right_to_left(data_array):
+    right_half = data_array[:, int(data_array.shape[1] / 2) : int(data_array.shape[1])]
 
-	right_half = data_array[:, int(data_array.shape[1]/2):int(data_array.shape[1])]
+    left_half = np.fliplr(right_half)
 
-	left_half = np.fliplr(right_half)
+    right_left_symmetric_array = np.hstack([left_half, right_half])
 
-	right_left_symmetric_array = np.hstack([left_half, right_half])
+    return right_left_symmetric_array
 
-	return right_left_symmetric_array
 
-def create_left_right_strain_data(region_bounds = [100, 1200, 200, 1000]):
-	xx, xy, yy = load_region_of_sokolov_data(region_bounds)
+def create_left_right_strain_data(region_bounds=[100, 1200, 200, 1000]):
+    xx, xy, yy = load_region_of_sokolov_data(region_bounds)
 
-	flipped_xx = mirror_array_left_to_right(xx)
-	flipped_xy = mirror_array_left_to_right(xy)
-	flipped_yy = mirror_array_left_to_right(yy)
+    flipped_xx = mirror_array_left_to_right(xx)
+    flipped_xy = mirror_array_left_to_right(xy)
+    flipped_yy = mirror_array_left_to_right(yy)
 
-	np.savez(f"{data_path}left_right_mirrored_strain_data_in_region_{region_bounds}.npz", full_xx_data = flipped_xx, full_xy_data = flipped_xy, full_yy_data = flipped_yy)
+    np.savez(
+        f"{data_path}left_right_mirrored_strain_data_in_region_{region_bounds}.npz",
+        full_xx_data=flipped_xx,
+        full_xy_data=flipped_xy,
+        full_yy_data=flipped_yy,
+    )
 
-def create_right_left_strain_data(region_bounds = [100, 1200, 200, 1000]):
-	xx, xy, yy = load_region_of_sokolov_data(region_bounds)
 
-	flipped_xx = mirror_array_right_to_left(xx)
-	flipped_xy = mirror_array_right_to_left(xy)
-	flipped_yy = mirror_array_right_to_left(yy)
+def create_right_left_strain_data(region_bounds=[100, 1200, 200, 1000]):
+    xx, xy, yy = load_region_of_sokolov_data(region_bounds)
 
-	np.savez(f"{data_path}right_left_mirrored_strain_data_in_region_{region_bounds}.npz", full_xx_data = flipped_xx, full_xy_data = flipped_xy, full_yy_data = flipped_yy)
+    flipped_xx = mirror_array_right_to_left(xx)
+    flipped_xy = mirror_array_right_to_left(xy)
+    flipped_yy = mirror_array_right_to_left(yy)
 
-def create_left_right_conc_data(region_bounds = [100, 1200, 200, 1000]):
+    np.savez(
+        f"{data_path}right_left_mirrored_strain_data_in_region_{region_bounds}.npz",
+        full_xx_data=flipped_xx,
+        full_xy_data=flipped_xy,
+        full_yy_data=flipped_yy,
+    )
+
+
+def create_left_right_conc_data(region_bounds=[100, 1200, 200, 1000]):
     conc_data = load_In_concentration_data(region_bounds)
 
     flipped_conc = mirror_array_left_to_right(conc_data)
     max_conc = np.amax(flipped_conc)
     # print(f"Max In Concentration in Left-Right array: {max_conc}")
 
-    np.save(f"{data_path}left_right_mirrored_In_conc_data_in_region_{region_bounds}.npy", flipped_conc)
+    np.save(
+        f"{data_path}left_right_mirrored_In_conc_data_in_region_{region_bounds}.npy",
+        flipped_conc,
+    )
 
-def create_right_left_conc_data(region_bounds = [100, 1200, 200, 1000]):
+
+def create_right_left_conc_data(region_bounds=[100, 1200, 200, 1000]):
     conc_data = load_In_concentration_data(region_bounds)
 
     flipped_conc = mirror_array_right_to_left(conc_data)
     max_conc = np.amax(flipped_conc)
     # print(f"Max In Concentration in Right-Left array: {max_conc}")
 
-    np.save(f"{data_path}right_left_mirrored_In_conc_data_in_region_{region_bounds}.npy", flipped_conc)
+    np.save(
+        f"{data_path}right_left_mirrored_In_conc_data_in_region_{region_bounds}.npy",
+        flipped_conc,
+    )
 
 
 left_right_region_bounds = [100, 1300, 440, 880]

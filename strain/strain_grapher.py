@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("/home/will/Documents/phd/research/simulations/common_modules/")
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,7 +11,8 @@ import backbone_quadrupolar_functions as bqf
 import isotope_parameters as ISOP
 import scipy.constants as constants
 
-def sokolov_strain_grapher(region_bounds = [100, 1200, 200, 1000], saving = False):
+
+def sokolov_strain_grapher(region_bounds=[100, 1200, 200, 1000], saving=False):
     """
     Function to recreate the graphs of strain found in the Sokolov paper.
 
@@ -26,7 +28,7 @@ def sokolov_strain_grapher(region_bounds = [100, 1200, 200, 1000], saving = Fals
 
     Returns:
         Does not return anything. Depending on options will either save a figure
-            or display it to the screen.    
+            or display it to the screen.
     """
 
     xx_array, xz_array, zz_array = bqf.load_sokolov_data(region_bounds)
@@ -34,31 +36,33 @@ def sokolov_strain_grapher(region_bounds = [100, 1200, 200, 1000], saving = Fals
     # Strain tensor components
     fig, axs = plt.subplots(1, 3, figsize=(9, 3), sharey=True)
 
-    im=axs[0].imshow(xx_array, vmin=-0.02, vmax=0.02)
+    im = axs[0].imshow(xx_array, vmin=-0.02, vmax=0.02)
     axs[0].axis("off")
-    axs[0].text(20, 150,"$\epsilon_{xx}$",fontsize=16, fontdict=None)
+    axs[0].text(20, 150, "$\epsilon_{xx}$", fontsize=16, fontdict=None)
 
     axs[1].imshow(zz_array, vmin=-0.02, vmax=0.02)
     axs[1].axis("off")
-    axs[1].text(20, 150,"$\epsilon_{zz}$",fontsize=16, fontdict=None)
-
+    axs[1].text(20, 150, "$\epsilon_{zz}$", fontsize=16, fontdict=None)
 
     axs[2].imshow(xz_array, vmin=-0.02, vmax=0.02)
     axs[2].axis("off")
-    axs[2].text(20, 150,"$\epsilon_{xz}$",fontsize=16, fontdict=None)
+    axs[2].text(20, 150, "$\epsilon_{xz}$", fontsize=16, fontdict=None)
 
     cbar_ax = fig.add_axes([0.1, 0.1, 0.5, 0.05])
-    cbar=plt.colorbar(im, cax=cbar_ax, orientation="horizontal")
+    cbar = plt.colorbar(im, cax=cbar_ax, orientation="horizontal")
 
     if saving:
-        plot_name = f"{graph_path}Sokolov_strain_graph_recreation_region_{region_bounds}.png"
+        plot_name = (
+            f"{graph_path}Sokolov_strain_graph_recreation_region_{region_bounds}.png"
+        )
         print("Saving plot: {}".format(plot_name))
         plt.savefig(plot_name)
     else:
         plt.show()
     plt.close()
 
-def sokolov_strain_vertical_grapher(region_bounds = [100, 1200, 200, 1000], saving = False):
+
+def sokolov_strain_vertical_grapher(region_bounds=[100, 1200, 200, 1000], saving=False):
     """
     Function to recreate the graphs of strain found in the Sokolov paper.
 
@@ -74,11 +78,11 @@ def sokolov_strain_vertical_grapher(region_bounds = [100, 1200, 200, 1000], savi
 
     Returns:
         Does not return anything. Depending on options will either save a figure
-            or display it to the screen.    
+            or display it to the screen.
     """
 
     xx_array, xz_array, zz_array = bqf.load_sokolov_data(region_bounds)
-    fig, axs = plt.subplots(ncols = 1, nrows = 3, constrained_layout = True, figsize = (6, 9))
+    fig, axs = plt.subplots(ncols=1, nrows=3, constrained_layout=True, figsize=(6, 9))
 
     xx_min = np.min(xx_array)
     xx_max = np.max(xx_array)
@@ -92,32 +96,36 @@ def sokolov_strain_vertical_grapher(region_bounds = [100, 1200, 200, 1000], savi
 
     cmap = cm.get_cmap("RdBu")
     normalizer = Normalize(cbar_min, cbar_max)
-    im = cm.ScalarMappable(norm = normalizer, cmap = cmap)
+    im = cm.ScalarMappable(norm=normalizer, cmap=cmap)
 
-    axs[0].imshow(xx_array, cmap = cmap, norm = normalizer)
+    axs[0].imshow(xx_array, cmap=cmap, norm=normalizer)
     axs[0].axis("off")
-    axs[0].text(20, 150,"$\epsilon_{xx}$",fontsize=16, fontdict=None)
+    axs[0].text(20, 150, "$\epsilon_{xx}$", fontsize=16, fontdict=None)
 
-    axs[1].imshow(zz_array, cmap = cmap, norm = normalizer)
+    axs[1].imshow(zz_array, cmap=cmap, norm=normalizer)
     axs[1].axis("off")
-    axs[1].text(20, 150,"$\epsilon_{zz}$",fontsize=16, fontdict=None)
+    axs[1].text(20, 150, "$\epsilon_{zz}$", fontsize=16, fontdict=None)
 
-
-    axs[2].imshow(xz_array, cmap = cmap, norm = normalizer)
+    axs[2].imshow(xz_array, cmap=cmap, norm=normalizer)
     axs[2].axis("off")
-    axs[2].text(20, 150,"$\epsilon_{xz}$",fontsize=16, fontdict=None)
+    axs[2].text(20, 150, "$\epsilon_{xz}$", fontsize=16, fontdict=None)
 
-    cbar=plt.colorbar(im, ax=axs.ravel().tolist(), shrink = 0.95, orientation = "vertical")
+    cbar = plt.colorbar(
+        im, ax=axs.ravel().tolist(), shrink=0.95, orientation="vertical"
+    )
 
     if saving:
-        plot_name = f"{graph_path}Sokolov_strain_graph_vertical_region_{region_bounds}.png"
+        plot_name = (
+            f"{graph_path}Sokolov_strain_graph_vertical_region_{region_bounds}.png"
+        )
         print("Saving plot: {}".format(plot_name))
-        plt.savefig(plot_name, bbox_inches = "tight")
+        plt.savefig(plot_name, bbox_inches="tight")
     else:
         plt.show()
     plt.close()
 
-def strain_histograms(region_bounds = [100, 1200, 200, 1000], saving = False):
+
+def strain_histograms(region_bounds=[100, 1200, 200, 1000], saving=False):
     """
     Function to create a histogram of shear strains across a region.
 
@@ -152,11 +160,22 @@ def strain_histograms(region_bounds = [100, 1200, 200, 1000], saving = False):
 
     xx_array, xz_array, zz_array = bqf.load_sokolov_data(region_bounds)
 
-    calculated_shear_strain = (2*np.abs(xz_array)).flatten() # based on the normal definition
-    measured_shear_strain = xz_array.flatten() # what Sokolov calls shear strain
+    calculated_shear_strain = (
+        2 * np.abs(xz_array)
+    ).flatten()  # based on the normal definition
+    measured_shear_strain = xz_array.flatten()  # what Sokolov calls shear strain
 
-    plt.figure(figsize = (12, 8))
-    vals, bins, patches = plt.hist([calculated_shear_strain, measured_shear_strain], "auto", density = False, histtype = "step", label = ["$\epsilon_S = |\epsilon_{xy}| + |\epsilon_{yz}| + |\epsilon_{xz}|$", "$\epsilon_{xz}$ as measured"])
+    plt.figure(figsize=(12, 8))
+    vals, bins, patches = plt.hist(
+        [calculated_shear_strain, measured_shear_strain],
+        "auto",
+        density=False,
+        histtype="step",
+        label=[
+            "$\epsilon_S = |\epsilon_{xy}| + |\epsilon_{yz}| + |\epsilon_{xz}|$",
+            "$\epsilon_{xz}$ as measured",
+        ],
+    )
     plt.legend()
     plt.xlabel("Shear Strain")
     plt.ylabel("Some Measure of Amount")
@@ -175,26 +194,32 @@ def strain_histograms(region_bounds = [100, 1200, 200, 1000], saving = False):
 
     return
 
-def single_row_strain_grapher(row, region_bounds = [100, 1200, 200, 1000], saving = False):
+
+def single_row_strain_grapher(row, region_bounds=[100, 1200, 200, 1000], saving=False):
     from mpl_toolkits.mplot3d.axes3d import Axes3D
+
     # row is here given as a number within the region bounds, so 0 is the first always
     xx_array, xz_array, zz_array = bqf.load_sokolov_data(region_bounds)
 
     num_y, num_x = xx_array.shape
     x_range = list(range(num_x))
     y_range = list(range(num_y))
-    
-    plt.figure(figsize = (12, 8))
 
-    plt.plot(xx_array[row, :], label = "XX Strain")
-    plt.plot(xz_array[row, :], label = "XZ Strain")
-    plt.plot(zz_array[row, :], label = "ZZ Strain")
+    plt.figure(figsize=(12, 8))
+
+    plt.plot(xx_array[row, :], label="XX Strain")
+    plt.plot(xz_array[row, :], label="XZ Strain")
+    plt.plot(zz_array[row, :], label="ZZ Strain")
     plt.legend()
     plt.show()
     plt.close()
 
-def many_rows_strain_grapher_3d(strain_axis = "xz", region_bounds = [100, 1200, 200, 1000], saving = False):
+
+def many_rows_strain_grapher_3d(
+    strain_axis="xz", region_bounds=[100, 1200, 200, 1000], saving=False
+):
     from mpl_toolkits.mplot3d.axes3d import Axes3D
+
     xx_array, xz_array, zz_array = bqf.load_sokolov_data(region_bounds)
 
     if strain_axis == "xz":
@@ -209,18 +234,22 @@ def many_rows_strain_grapher_3d(strain_axis = "xz", region_bounds = [100, 1200, 
     y_range = list(range(num_y))
 
     fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+    ax = fig.add_subplot(111, projection="3d")
 
     X, Y = np.meshgrid(x_range, y_range)
 
-    surf = ax.plot_surface(X,Y, strain_array, cmap = cm.YlGn)
+    surf = ax.plot_surface(X, Y, strain_array, cmap=cm.YlGn)
     ax.set_xlabel("X Co-ord")
     ax.set_ylabel("Y Co-ord")
     ax.set_zlabel(f"{strain_axis} Strain")
     plt.show()
 
-def finding_atomic_sites(strain_axis = "xz", region_bounds = [100, 1200, 200, 1000], saving = False):
+
+def finding_atomic_sites(
+    strain_axis="xz", region_bounds=[100, 1200, 200, 1000], saving=False
+):
     from skimage.feature import peak_local_max
+
     xx_array, xz_array, zz_array = bqf.load_sokolov_data(region_bounds)
 
     if strain_axis == "xz":
@@ -229,18 +258,17 @@ def finding_atomic_sites(strain_axis = "xz", region_bounds = [100, 1200, 200, 10
         strain_array = xx_array
     elif strain_axis == "zz":
         strain_array = zz_array
-    
-    locs = peak_local_max(strain_array, min_distance = 10, indices = False)
+
+    locs = peak_local_max(strain_array, min_distance=10, indices=False)
     # print(np.sum(locs))
-    
-    plt.imshow(locs, origin = "lower")
+
+    plt.imshow(locs, origin="lower")
     # plt.grid(which = "both")
     plt.xlabel("X")
     plt.ylabel("Y")
     plt.title("Peak Locations")
 
     plt.show()
-
 
 
 # Control panel
@@ -258,16 +286,16 @@ row = 0
 if recreating_Sokolov_strain:
     print("Graphing Strain")
     # makes a weird graph as of 03/09/20
-    sokolov_strain_grapher(region_bounds, saving = False)
+    sokolov_strain_grapher(region_bounds, saving=False)
 
 if neater_solokov_strain:
-    sokolov_strain_vertical_grapher(region_bounds, saving = True)
+    sokolov_strain_vertical_grapher(region_bounds, saving=True)
 
 if plotting_histograms:
-    strain_histograms(region_bounds, saving = True)
+    strain_histograms(region_bounds, saving=True)
 
 if graphing_a_row:
-    single_row_strain_grapher(row, region_bounds, saving = False)
+    single_row_strain_grapher(row, region_bounds, saving=False)
 
 if graphing_many_rows:
     many_rows_strain_grapher_3d()
