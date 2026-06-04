@@ -9,6 +9,7 @@ Serial and parallel implementations are both provided. The parallel version
 uses multiprocessing.Pool.starmap and scales to available CPU cores.
 """
 
+import logging
 import multiprocessing
 import numpy as np
 import qutip
@@ -17,6 +18,8 @@ import scipy.constants as const
 from qdot.isotopes import species_dict
 from qdot.hamiltonians import faraday_hamiltonian
 from qdot.io import load_efg
+
+logger = logging.getLogger(__name__)
 
 
 def spin_correlator(t, nuclear_hamiltonian, spin_axis):
@@ -194,7 +197,7 @@ def run_log_correlator_simulation(data_dir, save_dir, min_time_exp, max_time_exp
             data_dir, timerange, applied_field, species,
             region_bounds, step_size, chunksize,
         )
-        print(f"{species} done.")
+        logger.info("%s done.", species)
 
     archive_name = (
         f"log_time_correlator_data_B{applied_field}T"
@@ -241,7 +244,7 @@ def run_linear_correlator_simulation(data_dir, save_dir, min_time, max_time, tim
             data_dir, timerange, applied_field, species,
             region_bounds, step_size, chunksize,
         )
-        print(f"{species} done.")
+        logger.info("%s done.", species)
 
     archive_name = (
         f"linear_time_correlator_data_B{applied_field}T"

@@ -14,8 +14,12 @@ EFG archives are saved to / loaded from data_dir using a naming convention
 derived from the species, region bounds, and step size.
 """
 
+import logging
 import pathlib
+
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 def load_sokolov_data(data_dir, region_bounds, step_size=1):
@@ -122,7 +126,7 @@ def save_efg(data_dir, nuclear_species, region_bounds, step_size,
     if path.exists():
         return
     np.savez(path, eta=eta, V_XX=V_XX, V_YY=V_YY, V_ZZ=V_ZZ, euler_angles=euler_angles)
-    print(f"Saved EFG archive: {path}")
+    logger.info("Saved EFG archive: %s", path)
 
 
 def load_efg(data_dir, nuclear_species, region_bounds, step_size=1,
