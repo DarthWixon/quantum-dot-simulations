@@ -287,7 +287,7 @@ def run_strain_simulation(n_rows, n_cols, lattice_type=0,
 
     t0 = time.time()
     result = opt.minimize(
-        _potential_energy, unstr,
+        _potential_energy, unstr.flatten(),
         args=(spring_k, natural_l, box_w, box_h, n_rows, n_cols),
     )
     t1 = time.time()
