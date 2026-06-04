@@ -1,22 +1,18 @@
 """
-Benchmark the current calculate_efg implementation.
+Benchmark calculate_efg vs calculate_efg_vectorised.
 
 Generates synthetic strain arrays at several grid sizes matching the scale of
 the real Sokolov dataset (full dot region: 441×1100 ≈ 485,000 sites) and
-measures execution time per size.
+measures execution time per size for both implementations.
 
 Run from the repo root:
     python -m benchmarks.run_efg
-
-The Sokolov dot region at step_size=1 is far too large to run many times with
-the current implementation, so smaller sizes are timed properly (multiple
-runs) and a single large run is used to project to real-world scale.
 """
 
 import numpy as np
 
-from qdot.efg import calculate_efg
-from benchmarks.timing import benchmark, print_result, _fmt
+from qdot.efg import calculate_efg, calculate_efg_vectorised
+from benchmarks.timing import benchmark, compare, print_result, _fmt
 
 # Synthetic strain values representative of the Sokolov dataset.
 # Real data: ε_xx and ε_zz in [-0.02, 0.02], ε_xz in [-0.01, 0.01].
@@ -29,8 +25,6 @@ def make_strain(shape):
     return xx, xz, zz
 
 
-# Sizes benchmarked with multiple runs.
-# 200×200 = 40,000 sites is feasible; beyond that the loop takes minutes.
 TIMED_SIZES = [
     (10,  10),
     (50,  50),
@@ -38,7 +32,6 @@ TIMED_SIZES = [
     (200, 200),
 ]
 
-# One larger single-run measurement to anchor a projection to real scale.
 PROJECTION_SIZE = (400, 400)
 
 SPECIES   = "Ga69"
@@ -48,62 +41,76 @@ WARMUP    = 1
 # ---------------------------------------------------------------------------
 
 print()
-print("calculate_efg  —  current implementation")
-print("=" * 55)
+print("calculate_efg  —  scalar vs vectorised")
+print("=" * 60)
 print(f"species: {SPECIES}   runs per size: {N_RUNS}  warmup: {WARMUP}")
 print()
 
-results = {}
+scalar_results = {}
+vector_results = {}
+
 for n, m in TIMED_SIZES:
     xx, xz, zz = make_strain((n, m))
-    r = benchmark(
-        f"calculate_efg  {n}×{m}",
+
+    r_s = benchmark(
+        f"scalar      {n}×{m}",
         calculate_efg,
         SPECIES, xx, xz, zz,
-        n_runs=N_RUNS,
-        warmup=WARMUP,
-        n_sites=n * m,
+        n_runs=N_RUNS, warmup=WARMUP, n_sites=n * m,
     )
-    results[(n, m)] = r
-    print_result(r)
+    r_v = benchmark(
+        f"vectorised  {n}×{m}",
+        calculate_efg_vectorised,
+        SPECIES, xx, xz, zz,
+        n_runs=N_RUNS, warmup=WARMUP, n_sites=n * m,
+    )
+    scalar_results[(n, m)] = r_s
+    vector_results[(n, m)] = r_v
+
+    print_result(r_s)
+    print_result(r_v)
+    compare(r_s, r_v)
     print()
 
 # ---------------------------------------------------------------------------
-# Single large run — not warmed up, results flagged as approximate.
+# Single large run for both — unwarmed.
 
 print(f"Large single run  {PROJECTION_SIZE[0]}×{PROJECTION_SIZE[1]}  (no warmup — approximate)")
-print("-" * 55)
+print("-" * 60)
 n, m = PROJECTION_SIZE
 xx, xz, zz = make_strain((n, m))
-r_large = benchmark(
-    f"calculate_efg  {n}×{m}",
-    calculate_efg,
-    SPECIES, xx, xz, zz,
-    n_runs=1,
-    warmup=0,
-    n_sites=n * m,
+
+r_s_large = benchmark(
+    f"scalar      {n}×{m}",
+    calculate_efg, SPECIES, xx, xz, zz,
+    n_runs=1, warmup=0, n_sites=n * m,
 )
-print(f"  time:     {_fmt(r_large.mean)}")
-print(f"  per site: {_fmt(r_large.per_site)}  ({r_large.n_sites:,} sites)")
+r_v_large = benchmark(
+    f"vectorised  {n}×{m}",
+    calculate_efg_vectorised, SPECIES, xx, xz, zz,
+    n_runs=1, warmup=0, n_sites=n * m,
+)
+
+print(f"  scalar      time: {_fmt(r_s_large.mean)}   per site: {_fmt(r_s_large.per_site)}")
+print(f"  vectorised  time: {_fmt(r_v_large.mean)}   per site: {_fmt(r_v_large.per_site)}")
+print(f"  speedup:    {r_s_large.mean / r_v_large.mean:.1f}×")
 print()
 
 # ---------------------------------------------------------------------------
 # Projection to full Sokolov dataset scale.
 
-dot_sites    = 441 * 1100   # step_size=1, full dot region
-fine_sites   = 441 * 1100   # same, shown for clarity
-per_site_s   = r_large.per_site
+dot_sites = 441 * 1100
+s_per   = r_s_large.per_site
+v_per   = r_v_large.per_site
 
-print("Projections  (based on large single-run per-site time)")
-print("-" * 55)
+print("Projections to real dataset  (based on 400×400 per-site time)")
+print("-" * 60)
 for label, sites in [
     ("dot region  step=1  (441×1100)", dot_sites),
-    ("dot region  step=5  (88×220)",  dot_sites // 25),
-    ("dot region  step=10 (44×110)",  dot_sites // 100),
+    ("dot region  step=5  (88×220)",   dot_sites // 25),
+    ("dot region  step=10 (44×110)",   dot_sites // 100),
 ]:
-    projected = per_site_s * sites
-    print(f"  {label:<38}  {_fmt(projected)}  ({sites:,} sites)")
-
-print()
-print("Note: projections assume linear scaling, which holds for the loop-based")
-print("implementation since each site is processed independently.")
+    print(f"  {label}")
+    print(f"    scalar:      {_fmt(s_per * sites)}  ({sites:,} sites)")
+    print(f"    vectorised:  {_fmt(v_per * sites)}")
+    print(f"    speedup:     {s_per / v_per:.1f}×")
