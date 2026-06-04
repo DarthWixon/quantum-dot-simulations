@@ -35,9 +35,11 @@ def test_spin_correlator_all_axes_return_float():
 
 
 def test_spin_correlator_decays_over_time():
-    # The correlator should not be constant over time (for a non-trivial Hamiltonian)
+    # The Hamiltonian has zeeman_term=1.0 Hz and a quadrupolar term that does not
+    # commute with I_z, so <I_z(t)I_z(0)> must oscillate. The dominant frequency
+    # gap is ~3 Hz (eigenvalue spread), period ~0.33 s — use times up to 1 second.
     H = _simple_hamiltonian()
-    times = np.linspace(0, 1e-6, 5)
+    times = np.linspace(0, 1.0, 20)
     values = [spin_correlator(t, H, "z") for t in times]
     assert not np.allclose(values, values[0])
 

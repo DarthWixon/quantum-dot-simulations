@@ -92,7 +92,11 @@ def calculate_efg(nuclear_species, xx_array, xz_array, zz_array, use_sundfors=Fa
             V_YY[i, j] = w[idx[1]]
             V_XX[i, j] = w[idx[2]]
 
-            eta[i, j] = (V_XX[i, j] - V_YY[i, j]) / V_ZZ[i, j]
+            # eta is undefined (NaN) when V_ZZ is zero (no strain = no EFG)
+            if V_ZZ[i, j] != 0:
+                eta[i, j] = (V_XX[i, j] - V_YY[i, j]) / V_ZZ[i, j]
+            else:
+                eta[i, j] = np.nan
 
             rot_mat = np.array([v[:, idx[2]], v[:, idx[1]], v[:, idx[0]]]).T
             euler_angles[i, j] = euler_angles_from_rot_mat(rot_mat)

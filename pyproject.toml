@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdot"
@@ -10,7 +10,9 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "numpy>=1.25",
-    "scipy>=1.9,<1.11",  # scipy.optimize API changes in 1.11 break the strain simulation
+    "scipy>=1.11",  # original code pinned <1.11 due to a suspected scipy.optimize breakage
+                    # in the strain simulation; upper bound removed for Python 3.12 compatibility
+                    # TODO: add tests/test_strain.py and verify behaviour on scipy>=1.11
     "matplotlib>=3.7",
     "qutip>=4.7",
 ]
