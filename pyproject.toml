@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "qdot"
+version = "0.1.0"
+description = "Nuclear spin dynamics simulations for InGaAs quantum dots"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.25",
+    "scipy>=1.9,<1.11",  # scipy.optimize API changes in 1.11 break the strain simulation
+    "matplotlib>=3.7",
+    "qutip>=4.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "black>=23",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["qdot*"]
+
+[tool.black]
+line-length = 88
