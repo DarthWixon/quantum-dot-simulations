@@ -27,6 +27,7 @@ exactly on-axis.
 """
 
 import matplotlib
+
 matplotlib.use("Agg")
 
 import logging
@@ -35,8 +36,6 @@ from itertools import permutations
 
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.constants as const
-
 from qdot.isotopes import species_dict
 from qdot.hamiltonians import faraday_hamiltonian, rf_hamiltonian, transition_rate
 
@@ -49,31 +48,33 @@ logger = logging.getLogger(__name__)
 SPECIES = "Ga69"
 ga69 = species_dict[SPECIES]
 
-SPIN = ga69["particle_spin"]                      # 3/2
+SPIN = ga69["particle_spin"]  # 3/2
 ZEEMAN_PER_TESLA = ga69["zeeman_frequency_per_tesla"]  # 10.22e6 Hz/T
 
-# Quadrupolar coupling: qcc * V_ZZ gives frequency in Hz.
-# qcc = 3eQ / (2h * I * (2I-1)).  With V_ZZ = 1 (normalised), we set
-# QUAD_COUPLING to a representative ~3 MHz directly.
-QUAD_COUPLING_HZ = 3.0e6   # Hz — typical for GaAs quantum dot
+# Quadrupolar coupling parameter Q passed directly to the Hamiltonian.
+# For spin-3/2 the two satellites appear at ±6Q from the Larmor frequency,
+# so Q = 0.5 MHz gives a satellite separation of ±3 MHz — representative of
+# lightly strained GaAs quantum dots.
+QUAD_COUPLING_HZ = 0.5e6  # Hz
 
-ETA = 0.1          # biaxiality
-ALPHA, BETA, GAMMA = 0.0, 0.0, 0.0   # on-axis site
-RF_FIELD = 5e-3    # Tesla — RF field amplitude
+ETA = 0.1  # biaxiality
+ALPHA, BETA, GAMMA = 0.0, 0.0, 0.0  # on-axis site
+RF_FIELD = 5e-3  # Tesla — RF field amplitude
 
-SINGLE_FIELD = 5.0                          # T — for the left panel
-FIELD_SWEEP = np.linspace(1.0, 8.0, 10)    # T — for the right panel
+SINGLE_FIELD = 5.0  # T — for the left panel
+FIELD_SWEEP = np.linspace(1.0, 8.0, 10)  # T — for the right panel
 
-FREQ_HALF_SPAN = 5.0e6   # Hz each side of the Larmor frequency
+FREQ_HALF_SPAN = 5.0e6  # Hz each side of the Larmor frequency
 N_FREQ = 500
 
-OUTPUT_DIR = pathlib.Path("claude-test-graphs")
+OUTPUT_DIR = pathlib.Path(__file__).parent / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 
 # ---------------------------------------------------------------------------
 # Spectrum calculation
 # ---------------------------------------------------------------------------
+
 
 def _rf_freq_range(applied_field: float, n_points: int) -> np.ndarray:
     """Return RF frequency array centred on the Larmor frequency for SPECIES."""
@@ -103,7 +104,8 @@ def compute_spectrum(applied_field: float, rf_freq_list: np.ndarray) -> np.ndarr
     H = H.tidyup()
     H_rf = rf_hamiltonian(SPIN, RF_FIELD, 0.0, 0.0)
 
-    eigenenergies, eigenvectors = np.real_if_close(H.eigenstates())
+    eigenenergies, eigenvectors = H.eigenstates()
+    eigenenergies = np.real_if_close(eigenenergies)
     index_list = np.arange(len(eigenenergies))
 
     rates = np.zeros(len(rf_freq_list))
@@ -111,8 +113,10 @@ def compute_spectrum(applied_field: float, rf_freq_list: np.ndarray) -> np.ndarr
         for pair in permutations(index_list, 2):
             rates[r] += transition_rate(
                 H_rf,
-                eigenvectors[pair[0]], eigenvectors[pair[1]],
-                eigenenergies[pair[0]], eigenenergies[pair[1]],
+                eigenvectors[pair[0]],
+                eigenvectors[pair[1]],
+                eigenenergies[pair[0]],
+                eigenenergies[pair[1]],
                 rf_freq,
             )
     return rates
