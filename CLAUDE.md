@@ -46,6 +46,8 @@ Format code:
 black .
 ```
 
+**Always run `black <file>` on any file you have edited before committing.** A pre-commit hook also enforces this, but running it immediately avoids surprises at commit time.
+
 ## Architecture
 
 This is a Python library simulating nuclear spin dynamics in InGaAs quantum dots, targeting other researchers in the field.
