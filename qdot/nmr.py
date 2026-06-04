@@ -6,6 +6,7 @@ under an RF perturbation, building up an absorption spectrum by summing
 over all allowed transitions at each RF frequency.
 """
 
+import pathlib
 import numpy as np
 import scipy.constants as const
 from itertools import permutations
@@ -18,9 +19,17 @@ h = const.h
 e = const.e
 
 
-def absorption_spectrum(nuclear_species, applied_field, field_geometry,
-                        rf_freq_list, location, data_dir,
-                        region_bounds=None, rf_field=5e-3, use_sundfors=False):
+def absorption_spectrum(
+    nuclear_species: str,
+    applied_field: float,
+    field_geometry: str,
+    rf_freq_list: np.ndarray,
+    location: tuple[int, int],
+    data_dir: str | pathlib.Path,
+    region_bounds: list[int] | None = None,
+    rf_field: float = 5e-3,
+    use_sundfors: bool = False,
+) -> np.ndarray:
     """
     NMR absorption spectrum at a single lattice site.
 
@@ -96,8 +105,15 @@ def absorption_spectrum(nuclear_species, applied_field, field_geometry,
     return rates
 
 
-def varied_field_spectra(nuclear_species, applied_field_list, field_geometry,
-                         rf_freq_list, location, data_dir, region_bounds=None):
+def varied_field_spectra(
+    nuclear_species: str,
+    applied_field_list: list[float],
+    field_geometry: str,
+    rf_freq_list: np.ndarray,
+    location: tuple[int, int],
+    data_dir: str | pathlib.Path,
+    region_bounds: list[int] | None = None,
+) -> list[dict]:
     """
     Compute absorption spectra at multiple applied field strengths.
 

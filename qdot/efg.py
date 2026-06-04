@@ -9,7 +9,7 @@ import numpy as np
 from qdot.isotopes import species_dict, old_species_dict
 
 
-def euler_angles_from_rot_mat(rot_mat):
+def euler_angles_from_rot_mat(rot_mat: np.ndarray) -> tuple[float, float, float]:
     """
     Extract Euler angles (X-Y-Z convention) from a rotation matrix.
 
@@ -39,7 +39,13 @@ def euler_angles_from_rot_mat(rot_mat):
     return alpha, beta, gamma
 
 
-def calculate_efg(nuclear_species, xx_array, xz_array, zz_array, use_sundfors=False):
+def calculate_efg(
+    nuclear_species: str,
+    xx_array: np.ndarray,
+    xz_array: np.ndarray,
+    zz_array: np.ndarray,
+    use_sundfors: bool = False,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Calculate the EFG tensor at every lattice site from the local strain tensor.
 

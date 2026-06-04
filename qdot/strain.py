@@ -53,13 +53,13 @@ def _gaas_base_lattice(n_rows, n_cols):
     return large
 
 
-def gaas_lattice(n_rows, n_cols):
+def gaas_lattice(n_rows: int, n_cols: int) -> tuple[np.ndarray, np.ndarray]:
     """Pure GaAs lattice, no Indium."""
     large = _gaas_base_lattice(n_rows, n_cols)
     return large, large[1:n_rows + 1, 1:n_cols + 1]
 
 
-def gaas_lattice_with_indium_centre(n_rows, n_cols):
+def gaas_lattice_with_indium_centre(n_rows: int, n_cols: int) -> tuple[np.ndarray, np.ndarray]:
     """GaAs lattice with a single In atom at the centre."""
     large = _gaas_base_lattice(n_rows, n_cols)
     cr, cc = int(math.floor(n_rows / 2)) + 1, int(math.floor(n_cols / 2)) + 1
@@ -68,7 +68,11 @@ def gaas_lattice_with_indium_centre(n_rows, n_cols):
     return large, large[1:n_rows + 1, 1:n_cols + 1]
 
 
-def gaas_lattice_with_indium(n_rows, n_cols, in_positions):
+def gaas_lattice_with_indium(
+    n_rows: int,
+    n_cols: int,
+    in_positions: list[list[int]],
+) -> tuple[np.ndarray, np.ndarray]:
     """
     GaAs lattice with In atoms placed at specified positions.
 
@@ -88,7 +92,7 @@ def gaas_lattice_with_indium(n_rows, n_cols, in_positions):
     return large, large[1:n_rows + 1, 1:n_cols + 1]
 
 
-def block_in_positions(bottom_left, top_right):
+def block_in_positions(bottom_left: list[int], top_right: list[int]) -> list[list[int]]:
     """Generate a rectangular block of In positions."""
     return [[i, j] for i in range(bottom_left[0], top_right[0])
             for j in range(bottom_left[1], top_right[1])]
@@ -102,7 +106,7 @@ def _n_springs(n_rows, n_cols):
     return 2 * n_rows * n_cols + n_rows + n_cols
 
 
-def spring_constants_from_lattice(large_species_array, real_atoms=True):
+def spring_constants_from_lattice(large_species_array: np.ndarray, real_atoms: bool = True) -> np.ndarray:
     """Extract spring constant for each spring from the species array."""
     k_dict, _ = _bond_parameters(real_atoms)
     n_rows = large_species_array.shape[0] - 2
@@ -126,7 +130,7 @@ def spring_constants_from_lattice(large_species_array, real_atoms=True):
     return constants
 
 
-def natural_lengths_from_lattice(large_species_array, real_atoms=True):
+def natural_lengths_from_lattice(large_species_array: np.ndarray, real_atoms: bool = True) -> np.ndarray:
     """Extract natural (rest) length for each spring from the species array."""
     _, n_dict = _bond_parameters(real_atoms)
     n_rows = large_species_array.shape[0] - 2
@@ -188,7 +192,7 @@ def _potential_energy(coords, spring_k, natural_l, box_width, box_height, n_rows
     return np.sum(spring_k * (lengths - natural_l) ** 2)
 
 
-def unstrained_positions(n_rows, n_cols):
+def unstrained_positions(n_rows: int, n_cols: int) -> np.ndarray:
     """Equilibrium (unstrained) atomic positions on a regular grid."""
     box_h = n_rows + 2
     box_w = n_cols + 2
@@ -204,7 +208,7 @@ def unstrained_positions(n_rows, n_cols):
 # Strain tensor
 # ---------------------------------------------------------------------------
 
-def strain_tensor(strained_coords, unstrained_coords):
+def strain_tensor(strained_coords: np.ndarray, unstrained_coords: np.ndarray) -> np.ndarray:
     """
     Calculate the 2D strain tensor at each atomic site.
 
@@ -246,8 +250,14 @@ def strain_tensor(strained_coords, unstrained_coords):
 # Top-level simulation
 # ---------------------------------------------------------------------------
 
-def run_strain_simulation(n_rows, n_cols, lattice_type=0,
-                          in_positions=None, real_atoms=True, decimal_places=3):
+def run_strain_simulation(
+    n_rows: int,
+    n_cols: int,
+    lattice_type: int = 0,
+    in_positions: list[list[int]] | None = None,
+    real_atoms: bool = True,
+    decimal_places: int = 3,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float, float, float]:
     """
     Find the relaxed strained lattice by energy minimisation.
 

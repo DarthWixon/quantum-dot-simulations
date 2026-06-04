@@ -16,7 +16,21 @@ Two parameter sets are provided:
     old_species_dict — Sundfors (1974) values, for comparison with older literature
 """
 
-In_115 = {
+from typing import TypedDict
+
+
+class SpeciesParameters(TypedDict):
+    short_name: str
+    name: str
+    graph_name: str
+    particle_spin: float
+    zeeman_frequency_per_tesla: float
+    quadrupole_moment: float
+    S11: float
+    S44: float
+
+
+In_115: SpeciesParameters = {
     "short_name": "In_115",
     "name": "Indium 115",
     "graph_name": "In115",
@@ -27,7 +41,7 @@ In_115 = {
     "S44": -2.998e22,
 }
 
-Ga_69 = {
+Ga_69: SpeciesParameters = {
     "short_name": "Ga_69",
     "name": "Gallium 69",
     "graph_name": "Ga69",
@@ -38,7 +52,7 @@ Ga_69 = {
     "S44": -0.4 * -22e21,
 }
 
-Ga_71 = {
+Ga_71: SpeciesParameters = {
     "short_name": "Ga_71",
     "name": "Gallium 71",
     "graph_name": "Ga71",
@@ -49,7 +63,7 @@ Ga_71 = {
     "S44": -2.73e22,
 }
 
-As_75 = {
+As_75: SpeciesParameters = {
     "short_name": "As_75",
     "name": "Arsenic 75",
     "graph_name": "As75",
@@ -60,7 +74,7 @@ As_75 = {
     "S44": 1.98 * 24.2e21,
 }
 
-In_115_Old = {
+In_115_Old: SpeciesParameters = {
     "short_name": "In_115",
     "name": "Indium 115",
     "graph_name": "In115",
@@ -71,7 +85,7 @@ In_115_Old = {
     "S44": -2.998e22,
 }
 
-Ga_69_Old = {
+Ga_69_Old: SpeciesParameters = {
     "short_name": "Ga_69",
     "name": "Gallium 69",
     "graph_name": "Ga69",
@@ -82,7 +96,7 @@ Ga_69_Old = {
     "S44": -2.76e22,
 }
 
-Ga_71_Old = {
+Ga_71_Old: SpeciesParameters = {
     "short_name": "Ga_71",
     "name": "Gallium 71",
     "graph_name": "Ga71",
@@ -93,7 +107,7 @@ Ga_71_Old = {
     "S44": -2.73e22,
 }
 
-As_75_Old = {
+As_75_Old: SpeciesParameters = {
     "short_name": "As_75",
     "name": "Arsenic 75",
     "graph_name": "As75",
@@ -104,9 +118,11 @@ As_75_Old = {
     "S44": 7.94e22,
 }
 
-species_dict = {"Ga69": Ga_69, "Ga71": Ga_71, "As75": As_75, "In115": In_115}
+species_dict: dict[str, SpeciesParameters] = {
+    "Ga69": Ga_69, "Ga71": Ga_71, "As75": As_75, "In115": In_115
+}
 
-old_species_dict = {
+old_species_dict: dict[str, SpeciesParameters] = {
     "Ga69": Ga_69_Old,
     "Ga71": Ga_71_Old,
     "As75": As_75_Old,
