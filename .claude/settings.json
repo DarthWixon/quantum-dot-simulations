@@ -1,0 +1,5 @@
+{
+  "agents": {
+    "directories": [".claude/agents"]
+  }
+}

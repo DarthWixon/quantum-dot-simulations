@@ -15,10 +15,10 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from qdot.isotopes import species_dict
 
-
 # ---------------------------------------------------------------------------
 # Equivalent B-field maps
 # ---------------------------------------------------------------------------
+
 
 def plot_equivalent_b_field(nuclear_species, b_field_array, save_path=None):
     """
@@ -78,8 +78,14 @@ def plot_all_equivalent_b_fields(b_field_arrays, region_bounds=None, save_path=N
 # Strain toy model
 # ---------------------------------------------------------------------------
 
-def plot_strain_lattice(simulated_species, unstrained_positions, strained_positions,
-                        real_atoms=True, save_path=None):
+
+def plot_strain_lattice(
+    simulated_species,
+    unstrained_positions,
+    strained_positions,
+    real_atoms=True,
+    save_path=None,
+):
     """
     Overlay plot of unstrained and strained lattice positions and bonds.
 
@@ -107,17 +113,28 @@ def plot_strain_lattice(simulated_species, unstrained_positions, strained_positi
         for r in range(n_rows):
             for c in range(n_cols):
                 x, y = positions[r, c]
-                x_r = positions[r, c + 1, 0] if c + 1 < n_cols else box_size
-                y_r = positions[r, c + 1, 1] if c + 1 < n_cols else (r + 1) * box_size / (n_rows + 1)
-                x_u = positions[r + 1, c, 0] if r + 1 < n_rows else (c + 1) * box_size / (n_cols + 1)
-                y_u = positions[r + 1, c, 1] if r + 1 < n_rows else box_size
+                if c + 1 < n_cols:
+                    x_r, y_r = positions[r, c + 1]
+                else:
+                    x_r = box_size
+                    y_r = (r + 1) * box_size / (n_rows + 1)
+                if r + 1 < n_rows:
+                    x_u, y_u = positions[r + 1, c]
+                else:
+                    x_u = (c + 1) * box_size / (n_cols + 1)
+                    y_u = box_size
                 ax.plot([x, x_r], [y, y_r], "k--", alpha=alpha)
                 ax.plot([x, x_u], [y, y_u], "k--", alpha=alpha)
 
-    ax.scatter(unstrained_positions[:, :, 0], unstrained_positions[:, :, 1],
-               c=colours, alpha=0.5)
-    ax.scatter(strained_positions[:, :, 0], strained_positions[:, :, 1],
-               c=colours, alpha=1.0)
+    ax.scatter(
+        unstrained_positions[:, :, 0],
+        unstrained_positions[:, :, 1],
+        c=colours,
+        alpha=0.5,
+    )
+    ax.scatter(
+        strained_positions[:, :, 0], strained_positions[:, :, 1], c=colours, alpha=1.0
+    )
 
     legend = [
         Line2D([0], [0], color="k", linestyle="--", alpha=0.3, label="Unstrained"),
@@ -135,9 +152,16 @@ def plot_strain_lattice(simulated_species, unstrained_positions, strained_positi
     ax.set_ylim(0, box_size)
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.tick_params(axis="both", which="both",
-                   bottom=False, top=False, left=False, right=False,
-                   labelbottom=False, labelleft=False)
+    ax.tick_params(
+        axis="both",
+        which="both",
+        bottom=False,
+        top=False,
+        left=False,
+        right=False,
+        labelbottom=False,
+        labelleft=False,
+    )
     fig.tight_layout()
     _save_or_show(fig, save_path)
     return fig
@@ -160,8 +184,11 @@ def plot_strain_tensors(strain_tensor_array, absolute_values=False, save_path=No
     normalizer = Normalize(vmin, vmax)
 
     fig, axs = plt.subplots(1, 3, constrained_layout=True)
-    components = [(0, 0, r"$\epsilon_{xx}$"), (0, 1, r"$\epsilon_{xy}$"),
-                  (1, 1, r"$\epsilon_{yy}$")]
+    components = [
+        (0, 0, r"$\epsilon_{xx}$"),
+        (0, 1, r"$\epsilon_{xy}$"),
+        (1, 1, r"$\epsilon_{yy}$"),
+    ]
 
     for ax, (i, j, label) in zip(axs, components):
         ax.imshow(data[:, :, i, j], origin="lower", vmin=vmin, vmax=vmax, cmap=cm.GnBu)
@@ -170,7 +197,9 @@ def plot_strain_tensors(strain_tensor_array, absolute_values=False, save_path=No
 
     plt.colorbar(
         plt.cm.ScalarMappable(norm=normalizer, cmap=cm.GnBu),
-        ax=axs.ravel().tolist(), orientation="horizontal", shrink=0.95,
+        ax=axs.ravel().tolist(),
+        orientation="horizontal",
+        shrink=0.95,
     )
     _save_or_show(fig, save_path)
     return fig
@@ -179,6 +208,7 @@ def plot_strain_tensors(strain_tensor_array, absolute_values=False, save_path=No
 # ---------------------------------------------------------------------------
 # Concentration maps
 # ---------------------------------------------------------------------------
+
 
 def plot_concentration(conc_data, save_path=None):
     """
@@ -192,10 +222,10 @@ def plot_concentration(conc_data, save_path=None):
         Figure
     """
     fig, ax = plt.subplots()
-    im = ax.imshow(conc_data, cmap=cm.GnBu,
-                   vmin=conc_data.min(), vmax=conc_data.max())
-    plt.colorbar(im, ax=ax, orientation="horizontal",
-                 label="Indium Concentration", shrink=0.5)
+    im = ax.imshow(conc_data, cmap=cm.GnBu, vmin=conc_data.min(), vmax=conc_data.max())
+    plt.colorbar(
+        im, ax=ax, orientation="horizontal", label="Indium Concentration", shrink=0.5
+    )
     ax.axis("off")
     fig.tight_layout()
     _save_or_show(fig, save_path)
@@ -215,14 +245,14 @@ def plot_concentration_with_regions(conc_data, rect_specs, save_path=None):
         Figure
     """
     fig, ax = plt.subplots(figsize=(12, 8))
-    im = ax.imshow(conc_data, cmap=cm.GnBu,
-                   vmin=conc_data.min(), vmax=conc_data.max())
+    im = ax.imshow(conc_data, cmap=cm.GnBu, vmin=conc_data.min(), vmax=conc_data.max())
     plt.colorbar(im, ax=ax, orientation="horizontal")
     ax.set_title("Indium Concentration")
 
     for left, bottom, width, height in rect_specs:
-        rect = plt.Rectangle((left, bottom), width, height,
-                              edgecolor="black", linewidth=1, fill=False)
+        rect = plt.Rectangle(
+            (left, bottom), width, height, edgecolor="black", linewidth=1, fill=False
+        )
         ax.add_patch(rect)
 
     fig.tight_layout()
@@ -234,8 +264,15 @@ def plot_concentration_with_regions(conc_data, rect_specs, save_path=None):
 # Correlator graphs
 # ---------------------------------------------------------------------------
 
-def plot_correlator(timerange, correlator_data, nuclear_species,
-                    applied_field, log_time=False, save_path=None):
+
+def plot_correlator(
+    timerange,
+    correlator_data,
+    nuclear_species,
+    applied_field,
+    log_time=False,
+    save_path=None,
+):
     """
     Plot spin correlator time series for all three axes.
 
@@ -265,8 +302,9 @@ def plot_correlator(timerange, correlator_data, nuclear_species,
     return fig
 
 
-def plot_fourier_transform(timerange, correlator_data, timestep,
-                           nuclear_species, applied_field, save_path=None):
+def plot_fourier_transform(
+    timerange, correlator_data, timestep, nuclear_species, applied_field, save_path=None
+):
     """
     Plot the Fourier transform of a linearly-spaced correlator time series.
 
@@ -287,7 +325,7 @@ def plot_fourier_transform(timerange, correlator_data, timestep,
     fig, ax = plt.subplots()
     for i, axis in enumerate(["x", "y", "z"]):
         fft_data = np.fft.rfft(correlator_data[i])
-        ax.plot(freq, fft_data.real, label=f"{axis} axis")
+        ax.plot(freq, np.abs(fft_data), label=f"{axis} axis")
 
     ax.set_xlabel("Frequency (Hz)")
     ax.set_title(f"Fourier Transform — {nuclear_species}, B = {applied_field} T")
@@ -300,6 +338,7 @@ def plot_fourier_transform(timerange, correlator_data, timestep,
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _save_or_show(fig, save_path):
     if save_path is not None:

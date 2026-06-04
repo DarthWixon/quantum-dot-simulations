@@ -1,0 +1,21 @@
+# Human TODO
+
+Issues requiring a physicist's judgement. Claude agents should not attempt to fix or flag these — they are known limitations or open decisions, not bugs.
+
+---
+
+## Strain toy model — weak strain magnitude
+
+The energy minimisation produces peak strains of ~0.31% for a single substitutional In atom, roughly 10× below the 1–5% expected from a real 6% In–Ga bond-length mismatch. The model spreads the distortion across the whole periodic box rather than localising it near the inclusion. Decide whether this is acceptable for a pedagogical toy model or whether the boundary conditions / spring geometry need revisiting.
+
+## Strain toy model — non-negligible shear in block case
+
+The In-block scenario produces peak |ε_xz| at ~30% of the diagonal strain, forming a four-lobe quadrupole pattern. This is likely a least-squares deformation-gradient artefact near the inclusion boundary, not real physical shear. The single-In case produces ~5% shear (acceptable), but the block case warrants inspection.
+
+## NMR example — bypasses high-level functions
+
+`examples/nmr_spectrum.py` builds Hamiltonians directly using `faraday_hamiltonian` + `rf_hamiltonian` + `transition_rate` because `absorption_spectrum` and `varied_field_spectra` require pre-computed EFG `.npz` archive files that are not shipped with the repo. Decide whether to add a synthetic archive generation step to the example, or accept that the high-level NMR functions are only demonstrated with real data.
+
+## EFG species comparison — stale docstring
+
+`examples/efg_species_comparison.py` module docstring says "plots V_ZZ, η, and β" but the β row was dropped. Trivial fix; left here to avoid distraction during active review work.

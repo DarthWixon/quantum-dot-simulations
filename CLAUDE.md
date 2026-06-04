@@ -2,6 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Reviewing examples
+
+To review an example script, use the `/review-example` skill with the filename as argument (e.g. `/review-example efg_species_comparison.py`). This runs a physics reviewer and a code reviewer in parallel, then synthesises their findings into a single ranked report.
+
+The two reviewers are defined in `.claude/agents/`:
+- `physics-reviewer` — checks physical correctness against known parameter ranges, symmetries, and limiting cases
+- `code-reviewer` — checks Python quality, style, type hints, imports, and qdot API usage; does not comment on physics
+
+A session restart is needed to pick up newly created agent definitions.
+
+## Known limitations
+
+`human-todo.` in the repo root lists issues that require the physicist's judgement — weak strain magnitudes in the toy model, boundary artefacts, architectural decisions about examples. Do not flag or attempt to fix items listed there.
+
 ## Git workflow
 
 All changes must be made on a separate branch, never directly on `main`. Create a new branch before starting any task:
@@ -31,6 +45,8 @@ Format code:
 ```bash
 black .
 ```
+
+**Always run `black <file>` on any file you have edited before committing.** A pre-commit hook also enforces this, but running it immediately avoids surprises at commit time.
 
 ## Architecture
 

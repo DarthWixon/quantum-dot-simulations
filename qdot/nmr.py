@@ -11,16 +11,31 @@ import scipy.constants as const
 from itertools import permutations
 
 from qdot.isotopes import species_dict
-from qdot.io import load_efg
-from qdot.hamiltonians import faraday_hamiltonian, voigt_hamiltonian, rf_hamiltonian, transition_rate
+from qdot.io import load_efg, SOKOLOV_DOT_REGION
+
+_VALID_SPECIES = frozenset(species_dict)
+from qdot.hamiltonians import (
+    faraday_hamiltonian,
+    voigt_hamiltonian,
+    rf_hamiltonian,
+    transition_rate,
+)
 
 h = const.h
 e = const.e
 
 
-def absorption_spectrum(nuclear_species, applied_field, field_geometry,
-                        rf_freq_list, location, data_dir,
-                        region_bounds=None, rf_field=5e-3, use_sundfors=False):
+def absorption_spectrum(
+    nuclear_species,
+    applied_field,
+    field_geometry,
+    rf_freq_list,
+    location,
+    data_dir,
+    region_bounds=None,
+    rf_field=5e-3,
+    use_sundfors=False,
+):
     """
     NMR absorption spectrum at a single lattice site.
 
@@ -41,12 +56,16 @@ def absorption_spectrum(nuclear_species, applied_field, field_geometry,
     Returns:
         ndarray: Transition rate at each RF frequency, shape (len(rf_freq_list),).
     """
+    if nuclear_species not in _VALID_SPECIES:
+        raise ValueError(f"nuclear_species must be one of {sorted(_VALID_SPECIES)}, got {nuclear_species!r}")
     if region_bounds is None:
-        region_bounds = [100, 1200, 439, 880]
+        region_bounds = SOKOLOV_DOT_REGION
 
     x, y = location
     eta_arr, _, _, V_ZZ_arr, euler_arr = load_efg(
-        data_dir, nuclear_species, region_bounds,
+        data_dir,
+        nuclear_species,
+        region_bounds,
         use_sundfors=use_sundfors,
     )
 
@@ -77,10 +96,13 @@ def absorption_spectrum(nuclear_species, applied_field, field_geometry,
         H = voigt_hamiltonian(zeeman_term, quad_term, eta, spin, alpha, beta, gamma)
         H_rf = rf_hamiltonian(spin, 0, 0, rf_field)
     else:
-        raise ValueError(f"field_geometry must be 'Faraday' or 'Voigt', got {field_geometry!r}")
+        raise ValueError(
+            f"field_geometry must be 'Faraday' or 'Voigt', got {field_geometry!r}"
+        )
 
     H = H.tidyup()
-    eigenenergies, eigenvectors = np.real_if_close(H.eigenstates())
+    eigenvalues, eigenvectors = H.eigenstates()
+    eigenenergies = np.real_if_close(eigenvalues)
     index_list = np.arange(len(eigenenergies))
 
     rates = np.zeros(len(rf_freq_list))
@@ -88,16 +110,25 @@ def absorption_spectrum(nuclear_species, applied_field, field_geometry,
         for pair in permutations(index_list, 2):
             rates[r] += transition_rate(
                 H_rf,
-                eigenvectors[pair[0]], eigenvectors[pair[1]],
-                eigenenergies[pair[0]], eigenenergies[pair[1]],
+                eigenvectors[pair[0]],
+                eigenvectors[pair[1]],
+                eigenenergies[pair[0]],
+                eigenenergies[pair[1]],
                 rf_freq,
             )
 
     return rates
 
 
-def varied_field_spectra(nuclear_species, applied_field_list, field_geometry,
-                         rf_freq_list, location, data_dir, region_bounds=None):
+def varied_field_spectra(
+    nuclear_species,
+    applied_field_list,
+    field_geometry,
+    rf_freq_list,
+    location,
+    data_dir,
+    region_bounds=None,
+):
     """
     Compute absorption spectra at multiple applied field strengths.
 
@@ -118,8 +149,13 @@ def varied_field_spectra(nuclear_species, applied_field_list, field_geometry,
             "applied_field": B,
             "rf_freq_list": rf_freq_list,
             "data": absorption_spectrum(
-                nuclear_species, B, field_geometry,
-                rf_freq_list, location, data_dir, region_bounds,
+                nuclear_species,
+                B,
+                field_geometry,
+                rf_freq_list,
+                location,
+                data_dir,
+                region_bounds,
             ),
         }
         for B in applied_field_list

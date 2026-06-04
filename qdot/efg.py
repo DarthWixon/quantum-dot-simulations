@@ -8,6 +8,8 @@ the gradient-elastic tensor components S11 and S44 for each nuclear species.
 import numpy as np
 from qdot.isotopes import species_dict, old_species_dict
 
+_VALID_SPECIES = frozenset(species_dict)
+
 
 def euler_angles_from_rot_mat(rot_mat):
     """
@@ -60,6 +62,8 @@ def calculate_efg(nuclear_species, xx_array, xz_array, zz_array, use_sundfors=Fa
         V_XX, V_YY, V_ZZ (ndarray): EFG principal components, shape (n, m).
         euler_angles (ndarray): Euler angles to the PAF at each site, shape (n, m, 3).
     """
+    if nuclear_species not in _VALID_SPECIES:
+        raise ValueError(f"nuclear_species must be one of {sorted(_VALID_SPECIES)}, got {nuclear_species!r}")
     params = old_species_dict if use_sundfors else species_dict
     species = params[nuclear_species]
 
@@ -80,11 +84,13 @@ def calculate_efg(nuclear_species, xx_array, xz_array, zz_array, use_sundfors=Fa
             xz = xz_array[i, j]
             zz = zz_array[i, j]
 
-            V = np.array([
-                [S12 * (zz - xx),                  0,                S44 * xz],
-                [0,                (S12 + S11) * xx + S12 * zz, S44 * xz],
-                [S44 * xz,          S44 * xz,         2 * S12 * xx + S11 * zz],
-            ])
+            V = np.array(
+                [
+                    [S12 * (zz - xx), 0, S44 * xz],
+                    [0, (S12 + S11) * xx + S12 * zz, S44 * xz],
+                    [S44 * xz, S44 * xz, 2 * S12 * xx + S11 * zz],
+                ]
+            )
 
             w, v = np.linalg.eig(V)
             abs_w = np.abs(w)
@@ -147,6 +153,8 @@ def calculate_efg_vectorised(
         eta, V_XX, V_YY, V_ZZ (ndarray): shape (n, m).
         euler_angles (ndarray): shape (n, m, 3).
     """
+    if nuclear_species not in _VALID_SPECIES:
+        raise ValueError(f"nuclear_species must be one of {sorted(_VALID_SPECIES)}, got {nuclear_species!r}")
     params = old_species_dict if use_sundfors else species_dict
     species = params[nuclear_species]
 
@@ -188,9 +196,9 @@ def calculate_efg_vectorised(
     # ------------------------------------------------------------------
     # Step 3 — sort by descending |eigenvalue|: V_ZZ ≥ V_YY ≥ V_XX.
     # ------------------------------------------------------------------
-    sort_idx = np.argsort(np.abs(w), axis=-1)[:, :, ::-1]     # (n, m, 3)
+    sort_idx = np.argsort(np.abs(w), axis=-1)[:, :, ::-1]  # (n, m, 3)
 
-    w_sorted  = np.take_along_axis(w, sort_idx, axis=-1)
+    w_sorted = np.take_along_axis(w, sort_idx, axis=-1)
     V_ZZ = w_sorted[:, :, 0]
     V_YY = w_sorted[:, :, 1]
     V_XX = w_sorted[:, :, 2]
@@ -199,7 +207,7 @@ def calculate_efg_vectorised(
     # Broadcasting sort_idx from (n,m,3) → (n,m,3,3) applies the same
     # column permutation to every row of the eigenvector matrix.
     sort_idx_v = np.broadcast_to(sort_idx[:, :, np.newaxis, :], (n, m, 3, 3))
-    v_sorted = np.take_along_axis(v, sort_idx_v, axis=-1)      # (n, m, 3, 3)
+    v_sorted = np.take_along_axis(v, sort_idx_v, axis=-1)  # (n, m, 3, 3)
     # v_sorted[:,:,:, 0] = V_ZZ eigenvector at every site
     # v_sorted[:,:,:, 1] = V_YY eigenvector at every site
     # v_sorted[:,:,:, 2] = V_XX eigenvector at every site
@@ -216,11 +224,14 @@ def calculate_efg_vectorised(
     # Columns: [V_XX eigvec | V_YY eigvec | V_ZZ eigvec]
     # Matches the scalar:  rot = np.array([v[:,idx[2]], v[:,idx[1]], v[:,idx[0]]]).T
     # ------------------------------------------------------------------
-    rot = np.stack([
-        v_sorted[:, :, :, 2],   # V_XX eigenvector → column 0
-        v_sorted[:, :, :, 1],   # V_YY eigenvector → column 1
-        v_sorted[:, :, :, 0],   # V_ZZ eigenvector → column 2
-    ], axis=-1)                  # (n, m, 3, 3)
+    rot = np.stack(
+        [
+            v_sorted[:, :, :, 2],  # V_XX eigenvector → column 0
+            v_sorted[:, :, :, 1],  # V_YY eigenvector → column 1
+            v_sorted[:, :, :, 0],  # V_ZZ eigenvector → column 2
+        ],
+        axis=-1,
+    )  # (n, m, 3, 3)
 
     # eigh eigenvector signs are arbitrary → det(rot) can be −1 (improper rotation).
     # Force det = +1 site-wise by recomputing column 2 as the right-hand cross product.
@@ -234,24 +245,24 @@ def calculate_efg_vectorised(
     # np.where evaluates both branches everywhere and selects; safe_cos
     # prevents division-by-zero in the normal-case expressions at gimbal sites.
     # ------------------------------------------------------------------
-    r20    = rot[:, :, 2, 0]
+    r20 = rot[:, :, 2, 0]
     gimbal = np.abs(r20) >= 1.0
 
-    beta_normal  = -np.arcsin(np.clip(r20, -1.0, 1.0))
-    cos_beta     = np.cos(beta_normal)
-    safe_cos     = np.where(np.abs(cos_beta) > 1e-10, cos_beta, 1.0)
+    beta_normal = -np.arcsin(np.clip(r20, -1.0, 1.0))
+    cos_beta = np.cos(beta_normal)
+    safe_cos = np.where(np.abs(cos_beta) > 1e-10, cos_beta, 1.0)
 
     alpha_normal = np.arctan2(rot[:, :, 2, 1] / safe_cos, rot[:, :, 2, 2] / safe_cos)
     gamma_normal = np.arctan2(rot[:, :, 1, 0] / safe_cos, rot[:, :, 0, 0] / safe_cos)
 
     # Gimbal lock sub-cases (gamma is fixed to 0 in both).
-    alpha_neg = np.arctan2( rot[:, :, 0, 1],  rot[:, :, 0, 2])   # r20 == -1
-    alpha_pos = np.arctan2(-rot[:, :, 0, 1], -rot[:, :, 0, 2])   # r20 == +1
+    alpha_neg = np.arctan2(rot[:, :, 0, 1], rot[:, :, 0, 2])  # r20 == -1
+    alpha_pos = np.arctan2(-rot[:, :, 0, 1], -rot[:, :, 0, 2])  # r20 == +1
 
-    beta  = np.where(gimbal, np.where(r20 < 0, np.pi / 2, -np.pi / 2), beta_normal)
-    alpha = np.where(gimbal, np.where(r20 < 0, alpha_neg,  alpha_pos),  alpha_normal)
+    beta = np.where(gimbal, np.where(r20 < 0, np.pi / 2, -np.pi / 2), beta_normal)
+    alpha = np.where(gimbal, np.where(r20 < 0, alpha_neg, alpha_pos), alpha_normal)
     gamma = np.where(gimbal, 0.0, gamma_normal)
 
-    euler_angles = np.stack([alpha, beta, gamma], axis=-1)         # (n, m, 3)
+    euler_angles = np.stack([alpha, beta, gamma], axis=-1)  # (n, m, 3)
 
     return eta, V_XX, V_YY, V_ZZ, euler_angles

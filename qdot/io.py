@@ -21,6 +21,10 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+# Pixel bounds of the quantum dot region in the Sokolov dataset
+# (Sokolov et al. DOI: 10.1103/PhysRevB.93.045301).
+SOKOLOV_DOT_REGION = [100, 1200, 439, 880]
+
 
 def load_sokolov_data(data_dir, region_bounds, step_size=1):
     """
@@ -63,7 +67,9 @@ def load_mirrored_data(data_dir, region_bounds, step_size=1, mirror_type="left_r
         epsilon_xx, epsilon_xz, epsilon_zz (ndarray)
     """
     data_dir = pathlib.Path(data_dir)
-    archive_path = data_dir / f"{mirror_type}_mirrored_strain_data_in_region_{region_bounds}.npz"
+    archive_path = (
+        data_dir / f"{mirror_type}_mirrored_strain_data_in_region_{region_bounds}.npz"
+    )
     archive = np.load(archive_path)
     return archive["full_xx_data"], archive["full_xy_data"], archive["full_yy_data"]
 
@@ -90,8 +96,15 @@ def load_concentration_data(data_dir, region_bounds, step_size=1, method="cubic"
     return full_conc[L_1:L_2:step_size, H_1:H_2:step_size]
 
 
-def _efg_archive_path(data_dir, nuclear_species, region_bounds, step_size,
-                      use_sundfors=False, real_strain=True, mirror_type="left_right"):
+def _efg_archive_path(
+    data_dir,
+    nuclear_species,
+    region_bounds,
+    step_size,
+    use_sundfors=False,
+    real_strain=True,
+    mirror_type="left_right",
+):
     """Build the canonical archive filename for a pre-computed EFG dataset."""
     data_dir = pathlib.Path(data_dir)
     base = f"{nuclear_species}_calculation_results_for_region{region_bounds}_with_step_size_{step_size}"
@@ -102,9 +115,20 @@ def _efg_archive_path(data_dir, nuclear_species, region_bounds, step_size,
     return data_dir / f"{base}.npz"
 
 
-def save_efg(data_dir, nuclear_species, region_bounds, step_size,
-             eta, V_XX, V_YY, V_ZZ, euler_angles,
-             use_sundfors=False, real_strain=True, mirror_type="left_right"):
+def save_efg(
+    data_dir,
+    nuclear_species,
+    region_bounds,
+    step_size,
+    eta,
+    V_XX,
+    V_YY,
+    V_ZZ,
+    euler_angles,
+    use_sundfors=False,
+    real_strain=True,
+    mirror_type="left_right",
+):
     """
     Save pre-computed EFG arrays to a .npz archive.
 
@@ -121,16 +145,30 @@ def save_efg(data_dir, nuclear_species, region_bounds, step_size,
         real_strain (bool): False if mirrored strain data was used.
         mirror_type (str): Mirror variant, only used when real_strain=False.
     """
-    path = _efg_archive_path(data_dir, nuclear_species, region_bounds, step_size,
-                             use_sundfors, real_strain, mirror_type)
+    path = _efg_archive_path(
+        data_dir,
+        nuclear_species,
+        region_bounds,
+        step_size,
+        use_sundfors,
+        real_strain,
+        mirror_type,
+    )
     if path.exists():
         return
     np.savez(path, eta=eta, V_XX=V_XX, V_YY=V_YY, V_ZZ=V_ZZ, euler_angles=euler_angles)
     logger.info("Saved EFG archive: %s", path)
 
 
-def load_efg(data_dir, nuclear_species, region_bounds, step_size=1,
-             use_sundfors=False, real_strain=True, mirror_type="left_right"):
+def load_efg(
+    data_dir,
+    nuclear_species,
+    region_bounds,
+    step_size=1,
+    use_sundfors=False,
+    real_strain=True,
+    mirror_type="left_right",
+):
     """
     Load pre-computed EFG arrays from a .npz archive.
 
@@ -147,8 +185,15 @@ def load_efg(data_dir, nuclear_species, region_bounds, step_size=1,
         eta, V_XX, V_YY, V_ZZ (ndarray): EFG components, shape (n, m).
         euler_angles (ndarray): Euler angles, shape (n*m, 3).
     """
-    path = _efg_archive_path(data_dir, nuclear_species, region_bounds, step_size,
-                             use_sundfors, real_strain, mirror_type)
+    path = _efg_archive_path(
+        data_dir,
+        nuclear_species,
+        region_bounds,
+        step_size,
+        use_sundfors,
+        real_strain,
+        mirror_type,
+    )
     archive = np.load(path)
     eta = archive["eta"]
     n_sites = eta.size
