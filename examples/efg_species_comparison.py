@@ -46,22 +46,21 @@ def main() -> None:
     xz = tensors[:, :, 0, 1]
     zz = tensors[:, :, 1, 1]
 
-    fig, axes = plt.subplots(3, 4, figsize=(16, 10))
+    fig, axes = plt.subplots(2, 4, figsize=(16, 7))
     fig.suptitle(
         "EFG components across nuclear species — single In atom in 12×12 GaAs",
         fontsize=13,
     )
 
-    row_labels = ["$V_{ZZ}$", r"$\eta$ (biaxiality)", r"$\beta$ (Euler angle, rad)"]
+    row_labels = ["$V_{ZZ}$", r"$\eta$ (biaxiality)"]
 
     for col, sp in enumerate(SPECIES):
         log.info("Computing EFG for %s...", sp)
         eta, V_XX, V_YY, V_ZZ, euler_angles = calculate_efg_vectorised(
             sp, xx, xz, zz
         )
-        beta = euler_angles[:, :, 1]
 
-        data_rows = [V_ZZ, eta, beta]
+        data_rows = [V_ZZ, eta]
 
         for row, data in enumerate(data_rows):
             ax = axes[row, col]
