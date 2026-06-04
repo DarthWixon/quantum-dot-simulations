@@ -6,6 +6,8 @@ under an RF perturbation, building up an absorption spectrum by summing
 over all allowed transitions at each RF frequency.
 """
 
+import pathlib
+
 import numpy as np
 import scipy.constants as const
 from itertools import permutations
@@ -26,16 +28,16 @@ e = const.e
 
 
 def absorption_spectrum(
-    nuclear_species,
-    applied_field,
-    field_geometry,
-    rf_freq_list,
-    location,
-    data_dir,
-    region_bounds=None,
-    rf_field=5e-3,
-    use_sundfors=False,
-):
+    nuclear_species: str,
+    applied_field: float,
+    field_geometry: str,
+    rf_freq_list: np.ndarray,
+    location: tuple[int, int],
+    data_dir: pathlib.Path | str,
+    region_bounds: list[int] | None = None,
+    rf_field: float = 5e-3,
+    use_sundfors: bool = False,
+) -> np.ndarray:
     """
     NMR absorption spectrum at a single lattice site.
 
@@ -57,7 +59,9 @@ def absorption_spectrum(
         ndarray: Transition rate at each RF frequency, shape (len(rf_freq_list),).
     """
     if nuclear_species not in _VALID_SPECIES:
-        raise ValueError(f"nuclear_species must be one of {sorted(_VALID_SPECIES)}, got {nuclear_species!r}")
+        raise ValueError(
+            f"nuclear_species must be one of {sorted(_VALID_SPECIES)}, got {nuclear_species!r}"
+        )
     if region_bounds is None:
         region_bounds = SOKOLOV_DOT_REGION
 
@@ -121,14 +125,14 @@ def absorption_spectrum(
 
 
 def varied_field_spectra(
-    nuclear_species,
-    applied_field_list,
-    field_geometry,
-    rf_freq_list,
-    location,
-    data_dir,
-    region_bounds=None,
-):
+    nuclear_species: str,
+    applied_field_list: list[float],
+    field_geometry: str,
+    rf_freq_list: np.ndarray,
+    location: tuple[int, int],
+    data_dir: pathlib.Path | str,
+    region_bounds: list[int] | None = None,
+) -> list[dict]:
     """
     Compute absorption spectra at multiple applied field strengths.
 

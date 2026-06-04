@@ -9,7 +9,7 @@ import numpy as np
 import qutip
 
 
-def dephasing_kraus_operator(dephasing_value):
+def dephasing_kraus_operator(dephasing_value: float) -> qutip.Qobj:
     """
     Superoperator for phase damping with a given dephasing strength.
 
@@ -25,7 +25,7 @@ def dephasing_kraus_operator(dephasing_value):
     return qutip.superop_reps.kraus_to_super([K_0, K_1])
 
 
-def pulse_kraus_operator(q0, phase):
+def pulse_kraus_operator(q0: float, phase: float) -> qutip.Qobj:
     """
     Superoperator for an optical pulse with coherence q0 and phase shift.
 
@@ -42,13 +42,15 @@ def pulse_kraus_operator(q0, phase):
     return qutip.superop_reps.kraus_to_super([E_0, E_1, E_2])
 
 
-def z_polarisation(density_matrix):
+def z_polarisation(density_matrix: qutip.Qobj) -> complex:
     """Z-axis polarisation of a density matrix (in X basis)."""
     Z_in_X = qutip.Qobj(np.array([[0, 1], [1, 0]]))
     return (Z_in_X * density_matrix).tr()
 
 
-def dephasing_polarisation_curve(q0, phase, n_gammas=100):
+def dephasing_polarisation_curve(
+    q0: float, phase: float, n_gammas: int = 100
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Z polarisation as a function of dephasing strength after one pulse.
 
@@ -78,7 +80,7 @@ def dephasing_polarisation_curve(q0, phase, n_gammas=100):
     return dephasing_list, np.real_if_close(z_pol_list)
 
 
-def non_dephased_polarisation(q0, phase):
+def non_dephased_polarisation(q0: float, phase: float) -> float:
     """
     Z polarisation after a single perfect (undephased) pulse.
 

@@ -26,7 +26,11 @@ logger = logging.getLogger(__name__)
 SOKOLOV_DOT_REGION = [100, 1200, 439, 880]
 
 
-def load_sokolov_data(data_dir, region_bounds, step_size=1):
+def load_sokolov_data(
+    data_dir: pathlib.Path | str,
+    region_bounds: list[int],
+    step_size: int = 1,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Load strain tensor components from the Sokolov dataset.
 
@@ -53,7 +57,12 @@ def load_sokolov_data(data_dir, region_bounds, step_size=1):
     return xx, xz, zz
 
 
-def load_mirrored_data(data_dir, region_bounds, step_size=1, mirror_type="left_right"):
+def load_mirrored_data(
+    data_dir: pathlib.Path | str,
+    region_bounds: list[int],
+    step_size: int = 1,
+    mirror_type: str = "left_right",
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Load a mirrored (synthetic) strain dataset.
 
@@ -74,7 +83,12 @@ def load_mirrored_data(data_dir, region_bounds, step_size=1, mirror_type="left_r
     return archive["full_xx_data"], archive["full_xy_data"], archive["full_yy_data"]
 
 
-def load_concentration_data(data_dir, region_bounds, step_size=1, method="cubic"):
+def load_concentration_data(
+    data_dir: pathlib.Path | str,
+    region_bounds: list[int],
+    step_size: int = 1,
+    method: str = "cubic",
+) -> np.ndarray:
     """
     Load interpolated In115 concentration data from the Sokolov dataset.
 
@@ -97,14 +111,14 @@ def load_concentration_data(data_dir, region_bounds, step_size=1, method="cubic"
 
 
 def _efg_archive_path(
-    data_dir,
-    nuclear_species,
-    region_bounds,
-    step_size,
-    use_sundfors=False,
-    real_strain=True,
-    mirror_type="left_right",
-):
+    data_dir: pathlib.Path | str,
+    nuclear_species: str,
+    region_bounds: list[int],
+    step_size: int,
+    use_sundfors: bool = False,
+    real_strain: bool = True,
+    mirror_type: str = "left_right",
+) -> pathlib.Path:
     """Build the canonical archive filename for a pre-computed EFG dataset."""
     data_dir = pathlib.Path(data_dir)
     base = f"{nuclear_species}_calculation_results_for_region{region_bounds}_with_step_size_{step_size}"
@@ -116,19 +130,19 @@ def _efg_archive_path(
 
 
 def save_efg(
-    data_dir,
-    nuclear_species,
-    region_bounds,
-    step_size,
-    eta,
-    V_XX,
-    V_YY,
-    V_ZZ,
-    euler_angles,
-    use_sundfors=False,
-    real_strain=True,
-    mirror_type="left_right",
-):
+    data_dir: pathlib.Path | str,
+    nuclear_species: str,
+    region_bounds: list[int],
+    step_size: int,
+    eta: np.ndarray,
+    V_XX: np.ndarray,
+    V_YY: np.ndarray,
+    V_ZZ: np.ndarray,
+    euler_angles: np.ndarray,
+    use_sundfors: bool = False,
+    real_strain: bool = True,
+    mirror_type: str = "left_right",
+) -> None:
     """
     Save pre-computed EFG arrays to a .npz archive.
 
@@ -161,14 +175,14 @@ def save_efg(
 
 
 def load_efg(
-    data_dir,
-    nuclear_species,
-    region_bounds,
-    step_size=1,
-    use_sundfors=False,
-    real_strain=True,
-    mirror_type="left_right",
-):
+    data_dir: pathlib.Path | str,
+    nuclear_species: str,
+    region_bounds: list[int],
+    step_size: int = 1,
+    use_sundfors: bool = False,
+    real_strain: bool = True,
+    mirror_type: str = "left_right",
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Load pre-computed EFG arrays from a .npz archive.
 

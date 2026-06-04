@@ -14,7 +14,7 @@ from scipy.linalg import expm
 import qutip
 
 
-def state_constructor(n_photons):
+def state_constructor(n_photons: int) -> np.ndarray:
     """
     Build the initial |0...0⟩ state vector for the dot + n_photons system.
 
@@ -31,12 +31,14 @@ def state_constructor(n_photons):
     return state
 
 
-def state_to_density_matrix(state):
+def state_to_density_matrix(state: np.ndarray) -> np.ndarray:
     """Convert a state vector to a density matrix via outer product."""
     return np.outer(state, state)
 
 
-def single_qubit_operation(operator, n_qubits, target_qubit):
+def single_qubit_operation(
+    operator: np.ndarray, n_qubits: int, target_qubit: int
+) -> np.ndarray:
     """
     Embed a single-qubit operator into the full n_qubit Hilbert space.
 
@@ -70,7 +72,9 @@ def single_qubit_operation(operator, n_qubits, target_qubit):
     return result
 
 
-def controlled_unitary(n_photons, target_photon, unitary=None):
+def controlled_unitary(
+    n_photons: int, target_photon: int, unitary: np.ndarray | None = None
+) -> np.ndarray:
     """
     Construct a controlled-unitary gate with the dot as control.
 
@@ -98,7 +102,7 @@ def controlled_unitary(n_photons, target_photon, unitary=None):
     return first_term + second_term
 
 
-def cnot_array(n_photons):
+def cnot_array(n_photons: int) -> np.ndarray:
     """
     Build an array of CNOT operators, one per photon.
 
@@ -108,13 +112,12 @@ def cnot_array(n_photons):
     Returns:
         ndarray of Qobj: CNOT operators, shape (n_photons,).
     """
-    return np.array([
-        qutip.Qobj(controlled_unitary(n_photons, i + 1))
-        for i in range(n_photons)
-    ])
+    return np.array(
+        [qutip.Qobj(controlled_unitary(n_photons, i + 1)) for i in range(n_photons)]
+    )
 
 
-def perfect_cluster_state_machine_gun(n_photons):
+def perfect_cluster_state_machine_gun(n_photons: int) -> np.ndarray:
     """
     Operator for the ideal cluster-state machine gun on n_photons qubits.
 
@@ -139,7 +142,7 @@ def perfect_cluster_state_machine_gun(n_photons):
     return total
 
 
-def operational_perfect_machine_gun(n_photons):
+def operational_perfect_machine_gun(n_photons: int) -> np.ndarray:
     """
     Apply the perfect machine gun to the |0...0⟩ initial state.
 
@@ -154,7 +157,9 @@ def operational_perfect_machine_gun(n_photons):
     return operator @ initial
 
 
-def machine_gun_with_pauli_errors(n_photons, errors_array):
+def machine_gun_with_pauli_errors(
+    n_photons: int, errors_array: np.ndarray
+) -> np.ndarray:
     """
     Machine gun operator with Pauli errors applied to the dot during each cycle.
 
@@ -178,7 +183,9 @@ def machine_gun_with_pauli_errors(n_photons, errors_array):
     for i in range(n_photons):
         cnot = controlled_unitary(n_photons, i + 1)
         if errors_array[i, 0] == 1:
-            error_mat = single_qubit_operation(error_ops[errors_array[i, 1]], n_photons + 1, 1)
+            error_mat = single_qubit_operation(
+                error_ops[errors_array[i, 1]], n_photons + 1, 1
+            )
         else:
             error_mat = np.eye(2 ** (n_photons + 1))
         total = dot_rotator @ cnot @ error_mat @ total

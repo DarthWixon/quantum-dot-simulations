@@ -6,6 +6,7 @@ Pass save_path (str or Path) to save instead of displaying.
 """
 
 import pathlib
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -20,7 +21,11 @@ from qdot.isotopes import species_dict
 # ---------------------------------------------------------------------------
 
 
-def plot_equivalent_b_field(nuclear_species, b_field_array, save_path=None):
+def plot_equivalent_b_field(
+    nuclear_species: str,
+    b_field_array: np.ndarray,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
     """
     Heatmap of the equivalent magnetic field for one nuclear species.
 
@@ -42,7 +47,11 @@ def plot_equivalent_b_field(nuclear_species, b_field_array, save_path=None):
     return fig
 
 
-def plot_all_equivalent_b_fields(b_field_arrays, region_bounds=None, save_path=None):
+def plot_all_equivalent_b_fields(
+    b_field_arrays: list[np.ndarray],
+    region_bounds: list[int] | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
     """
     2×2 grid of equivalent B-field heatmaps, one per nuclear species.
 
@@ -80,12 +89,12 @@ def plot_all_equivalent_b_fields(b_field_arrays, region_bounds=None, save_path=N
 
 
 def plot_strain_lattice(
-    simulated_species,
-    unstrained_positions,
-    strained_positions,
-    real_atoms=True,
-    save_path=None,
-):
+    simulated_species: np.ndarray,
+    unstrained_positions: np.ndarray,
+    strained_positions: np.ndarray,
+    real_atoms: bool = True,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
     """
     Overlay plot of unstrained and strained lattice positions and bonds.
 
@@ -167,7 +176,11 @@ def plot_strain_lattice(
     return fig
 
 
-def plot_strain_tensors(strain_tensor_array, absolute_values=False, save_path=None):
+def plot_strain_tensors(
+    strain_tensor_array: np.ndarray,
+    absolute_values: bool = False,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
     """
     Three-panel plot of ε_xx, ε_xy, and ε_yy strain components.
 
@@ -210,7 +223,10 @@ def plot_strain_tensors(strain_tensor_array, absolute_values=False, save_path=No
 # ---------------------------------------------------------------------------
 
 
-def plot_concentration(conc_data, save_path=None):
+def plot_concentration(
+    conc_data: np.ndarray,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
     """
     Heatmap of In115 concentration across the dot.
 
@@ -232,7 +248,11 @@ def plot_concentration(conc_data, save_path=None):
     return fig
 
 
-def plot_concentration_with_regions(conc_data, rect_specs, save_path=None):
+def plot_concentration_with_regions(
+    conc_data: np.ndarray,
+    rect_specs: list[tuple[float, float, float, float]],
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
     """
     Concentration heatmap with highlighted rectangular regions overlaid.
 
@@ -266,13 +286,13 @@ def plot_concentration_with_regions(conc_data, rect_specs, save_path=None):
 
 
 def plot_correlator(
-    timerange,
-    correlator_data,
-    nuclear_species,
-    applied_field,
-    log_time=False,
-    save_path=None,
-):
+    timerange: np.ndarray,
+    correlator_data: np.ndarray,
+    nuclear_species: str,
+    applied_field: float,
+    log_time: bool = False,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
     """
     Plot spin correlator time series for all three axes.
 
@@ -303,8 +323,13 @@ def plot_correlator(
 
 
 def plot_fourier_transform(
-    timerange, correlator_data, timestep, nuclear_species, applied_field, save_path=None
-):
+    timerange: np.ndarray,
+    correlator_data: np.ndarray,
+    timestep: float,
+    nuclear_species: str,
+    applied_field: float,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
     """
     Plot the Fourier transform of a linearly-spaced correlator time series.
 
@@ -340,7 +365,7 @@ def plot_fourier_transform(
 # ---------------------------------------------------------------------------
 
 
-def _save_or_show(fig, save_path):
+def _save_or_show(fig: plt.Figure, save_path: pathlib.Path | str | None) -> None:
     if save_path is not None:
         fig.savefig(pathlib.Path(save_path))
     else:
