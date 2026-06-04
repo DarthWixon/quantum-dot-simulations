@@ -11,15 +11,17 @@ from qdot.isotopes import species_dict, old_species_dict
 
 def euler_angles_from_rot_mat(rot_mat):
     """
-    Extract Euler angles (X-Y-Z convention) from a rotation matrix.
+    Extract Euler angles from a rotation matrix.
 
-    Finds one valid set of angles (alpha, beta, gamma) such that
-    R = Rx(alpha) · Ry(beta) · Rz(gamma).
+    Finds angles (alpha, beta, gamma) such that
+    R = Rz(gamma) · Ry(beta) · Rx(alpha).
 
     Based on Slabaugh, "Computing Euler Angles from a Rotation Matrix."
+    Note: the original code docstring incorrectly stated Rx·Ry·Rz;
+    the element-wise extraction (rot[2,0] = −sin β) corresponds to Rz·Ry·Rx.
 
     Args:
-        rot_mat (ndarray): 3×3 rotation matrix.
+        rot_mat (ndarray): 3×3 proper rotation matrix (det = +1).
 
     Returns:
         alpha, beta, gamma (float): Euler angles in radians.
@@ -99,6 +101,9 @@ def calculate_efg(nuclear_species, xx_array, xz_array, zz_array, use_sundfors=Fa
                 eta[i, j] = np.nan
 
             rot_mat = np.array([v[:, idx[2]], v[:, idx[1]], v[:, idx[0]]]).T
+            # eig eigenvector signs are arbitrary → det can be −1 (improper rotation).
+            # Force det = +1 by recomputing the Z column as the right-hand cross product.
+            rot_mat[:, 2] = np.cross(rot_mat[:, 0], rot_mat[:, 1])
             euler_angles[i, j] = euler_angles_from_rot_mat(rot_mat)
 
     return eta, V_XX, V_YY, V_ZZ, euler_angles
@@ -216,6 +221,11 @@ def calculate_efg_vectorised(
         v_sorted[:, :, :, 1],   # V_YY eigenvector → column 1
         v_sorted[:, :, :, 0],   # V_ZZ eigenvector → column 2
     ], axis=-1)                  # (n, m, 3, 3)
+
+    # eigh eigenvector signs are arbitrary → det(rot) can be −1 (improper rotation).
+    # Force det = +1 site-wise by recomputing column 2 as the right-hand cross product.
+    # np.cross on (n,m,3) inputs returns (n,m,3); no loop needed.
+    rot[:, :, :, 2] = np.cross(rot[:, :, :, 0], rot[:, :, :, 1])
 
     # ------------------------------------------------------------------
     # Step 6 — vectorised Euler angle extraction (X-Y-Z, Slabaugh 2008).
