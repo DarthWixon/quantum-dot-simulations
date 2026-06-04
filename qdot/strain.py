@@ -13,34 +13,67 @@ import numpy as np
 import scipy.optimize as opt
 from scipy.spatial import distance_matrix as scipy_distance_matrix
 
-
 # ---------------------------------------------------------------------------
 # Bond parameters
 # ---------------------------------------------------------------------------
+
 
 def _bond_parameters(real_atoms=True):
     """Return (spring_constants, natural_lengths) dicts keyed by species-pair string."""
     if real_atoms:
         # Stiffnesses from Vurgaftman 2001, DOI: 10.1063/1.1368156
-        k = {"00": 1, "01": 2.56, "02": 1.22,
-             "10": 2.56, "11": 2.99, "12": 2.30,
-             "20": 1.22, "21": 2.30, "22": 1.58}
-        n = {"00": 1, "01": 1, "02": 1,
-             "10": 1, "11": 1, "12": 1.06,
-             "20": 1, "21": 1.06, "22": 1}
+        k = {
+            "00": 1,
+            "01": 2.56,
+            "02": 1.22,
+            "10": 2.56,
+            "11": 2.99,
+            "12": 2.30,
+            "20": 1.22,
+            "21": 2.30,
+            "22": 1.58,
+        }
+        n = {
+            "00": 1,
+            "01": 1,
+            "02": 1,
+            "10": 1,
+            "11": 1,
+            "12": 1.06,
+            "20": 1,
+            "21": 1.06,
+            "22": 1,
+        }
     else:
-        k = {"00": 1, "01": 5, "02": 50,
-             "10": 5, "11": 10, "12": 1000,
-             "20": 50, "21": 1000, "22": 200}
-        n = {"00": 1, "01": 1, "02": 1,
-             "10": 1, "11": 1, "12": 0.1,
-             "20": 1, "21": 0.1, "22": 1}
+        k = {
+            "00": 1,
+            "01": 5,
+            "02": 50,
+            "10": 5,
+            "11": 10,
+            "12": 1000,
+            "20": 50,
+            "21": 1000,
+            "22": 200,
+        }
+        n = {
+            "00": 1,
+            "01": 1,
+            "02": 1,
+            "10": 1,
+            "11": 1,
+            "12": 0.1,
+            "20": 1,
+            "21": 0.1,
+            "22": 1,
+        }
     return k, n
 
 
 # ---------------------------------------------------------------------------
 # Lattice generators
 # ---------------------------------------------------------------------------
+
 
 def _gaas_base_lattice(n_rows, n_cols):
     """GaAs alternating lattice with a 2-cell border for boundary conditions."""
@@ -56,7 +89,7 @@ def _gaas_base_lattice(n_rows, n_cols):
 def gaas_lattice(n_rows, n_cols):
     """Pure GaAs lattice, no Indium."""
     large = _gaas_base_lattice(n_rows, n_cols)
-    return large, large[1:n_rows + 1, 1:n_cols + 1]
+    return large, large[1 : n_rows + 1, 1 : n_cols + 1]
 
 
 def gaas_lattice_with_indium_centre(n_rows, n_cols):
@@ -65,7 +98,7 @@ def gaas_lattice_with_indium_centre(n_rows, n_cols):
     cr, cc = int(math.floor(n_rows / 2)) + 1, int(math.floor(n_cols / 2)) + 1
     if large[cr, cc] == 0:
         large[cr, cc] = 2
-    return large, large[1:n_rows + 1, 1:n_cols + 1]
+    return large, large[1 : n_rows + 1, 1 : n_cols + 1]
 
 
 def gaas_lattice_with_indium(n_rows, n_cols, in_positions):
@@ -85,18 +118,22 @@ def gaas_lattice_with_indium(n_rows, n_cols, in_positions):
         x, y = pos[0] + 1, pos[1] + 1
         if large[y, x] == 0:
             large[y, x] = 2
-    return large, large[1:n_rows + 1, 1:n_cols + 1]
+    return large, large[1 : n_rows + 1, 1 : n_cols + 1]
 
 
 def block_in_positions(bottom_left, top_right):
     """Generate a rectangular block of In positions."""
-    return [[i, j] for i in range(bottom_left[0], top_right[0])
-            for j in range(bottom_left[1], top_right[1])]
+    return [
+        [i, j]
+        for i in range(bottom_left[0], top_right[0])
+        for j in range(bottom_left[1], top_right[1])
+    ]
 
 
 # ---------------------------------------------------------------------------
 # Spring parameter extraction
 # ---------------------------------------------------------------------------
+
 
 def _n_springs(n_rows, n_cols):
     return 2 * n_rows * n_cols + n_rows + n_cols
@@ -119,9 +156,13 @@ def spring_constants_from_lattice(large_species_array, real_atoms=True):
             constants[above_idx] = k_dict[f"{own}{large_species_array[r - 1, c]}"]
             constants[left_idx] = k_dict[f"{own}{large_species_array[r, c - 1]}"]
             if r == n_rows:
-                constants[above_idx + 2] = k_dict[f"{own}{large_species_array[r + 1, c]}"]
+                constants[above_idx + 2] = k_dict[
+                    f"{own}{large_species_array[r + 1, c]}"
+                ]
             if c == n_cols:
-                constants[left_idx + 2] = k_dict[f"{own}{large_species_array[r, c + 1]}"]
+                constants[left_idx + 2] = k_dict[
+                    f"{own}{large_species_array[r, c + 1]}"
+                ]
 
     return constants
 
@@ -154,6 +195,7 @@ def natural_lengths_from_lattice(large_species_array, real_atoms=True):
 # Energy function and position ↔ spring-length conversion
 # ---------------------------------------------------------------------------
 
+
 def _positions_to_spring_lengths(coords, box_width, box_height, n_rows, n_cols):
     coords = np.reshape(coords, (n_rows, n_cols, 2))
     n_s = _n_springs(n_rows, n_cols)
@@ -168,23 +210,33 @@ def _positions_to_spring_lengths(coords, box_width, box_height, n_rows, n_cols):
             x_top = coords[r - 1, c, 0] if r > 0 else (c + 1) * box_width / (n_cols + 1)
             y_top = coords[r - 1, c, 1] if r > 0 else 0
             x_left = coords[r, c - 1, 0] if c > 0 else 0
-            y_left = coords[r, c - 1, 1] if c > 0 else (r + 1) * box_height / (n_rows + 1)
+            y_left = (
+                coords[r, c - 1, 1] if c > 0 else (r + 1) * box_height / (n_rows + 1)
+            )
 
             lengths[above_idx] = np.sqrt((x - x_top) ** 2 + (y - y_top) ** 2)
             lengths[left_idx] = np.sqrt((x - x_left) ** 2 + (y - y_left) ** 2)
 
             if r == n_rows - 1:
                 x_bot = (c + 1) * box_width / (n_cols + 1)
-                lengths[above_idx + 2] = np.sqrt((x - x_bot) ** 2 + (y - box_height) ** 2)
+                lengths[above_idx + 2] = np.sqrt(
+                    (x - x_bot) ** 2 + (y - box_height) ** 2
+                )
             if c == n_cols - 1:
                 y_right = (r + 1) * box_height / (n_rows + 1)
-                lengths[left_idx + 2] = np.sqrt((x - box_width) ** 2 + (y - y_right) ** 2)
+                lengths[left_idx + 2] = np.sqrt(
+                    (x - box_width) ** 2 + (y - y_right) ** 2
+                )
 
     return lengths
 
 
-def _potential_energy(coords, spring_k, natural_l, box_width, box_height, n_rows, n_cols):
-    lengths = _positions_to_spring_lengths(coords, box_width, box_height, n_rows, n_cols)
+def _potential_energy(
+    coords, spring_k, natural_l, box_width, box_height, n_rows, n_cols
+):
+    lengths = _positions_to_spring_lengths(
+        coords, box_width, box_height, n_rows, n_cols
+    )
     return np.sum(spring_k * (lengths - natural_l) ** 2)
 
 
@@ -195,14 +247,17 @@ def unstrained_positions(n_rows, n_cols):
     coords = np.zeros((n_rows, n_cols, 2))
     for r in range(n_rows):
         for c in range(n_cols):
-            coords[r, c] = [(c + 1) * box_w / (n_cols + 1),
-                            (r + 1) * box_h / (n_rows + 1)]
+            coords[r, c] = [
+                (c + 1) * box_w / (n_cols + 1),
+                (r + 1) * box_h / (n_rows + 1),
+            ]
     return coords
 
 
 # ---------------------------------------------------------------------------
 # Strain tensor
 # ---------------------------------------------------------------------------
+
 
 def strain_tensor(strained_coords, unstrained_coords):
     """
@@ -235,7 +290,7 @@ def strain_tensor(strained_coords, unstrained_coords):
                     W += np.outer(ds, du)
                     V += np.outer(du, du)
 
-            F = W @ np.linalg.inv(V)
+            F = W @ np.linalg.pinv(V)
             grad_U = F - np.eye(2)
             result[r, c] = 0.5 * (grad_U + grad_U.T)
 
@@ -246,8 +301,10 @@ def strain_tensor(strained_coords, unstrained_coords):
 # Top-level simulation
 # ---------------------------------------------------------------------------
 
-def run_strain_simulation(n_rows, n_cols, lattice_type=0,
-                          in_positions=None, real_atoms=True, decimal_places=3):
+
+def run_strain_simulation(
+    n_rows, n_cols, lattice_type=0, in_positions=None, real_atoms=True, decimal_places=3
+):
     """
     Find the relaxed strained lattice by energy minimisation.
 
@@ -279,7 +336,9 @@ def run_strain_simulation(n_rows, n_cols, lattice_type=0,
     elif lattice_type == 1:
         large, simulated_species = gaas_lattice_with_indium_centre(n_rows, n_cols)
     else:
-        large, simulated_species = gaas_lattice_with_indium(n_rows, n_cols, in_positions)
+        large, simulated_species = gaas_lattice_with_indium(
+            n_rows, n_cols, in_positions
+        )
 
     spring_k = spring_constants_from_lattice(large, real_atoms)
     natural_l = natural_lengths_from_lattice(large, real_atoms)
@@ -287,7 +346,8 @@ def run_strain_simulation(n_rows, n_cols, lattice_type=0,
 
     t0 = time.time()
     result = opt.minimize(
-        _potential_energy, unstr.flatten(),
+        _potential_energy,
+        unstr.flatten(),
         args=(spring_k, natural_l, box_w, box_h, n_rows, n_cols),
     )
     t1 = time.time()
@@ -297,14 +357,20 @@ def run_strain_simulation(n_rows, n_cols, lattice_type=0,
 
     lengths = _positions_to_spring_lengths(strained, box_w, box_h, n_rows, n_cols)
     n_s = _n_springs(n_rows, n_cols)
-    row_lengths = np.array([
-        np.sum(lengths[1 + 2 * r * n_cols: 1 + 2 * r * n_cols + 2 * n_cols + 1: 2])
-        for r in range(n_rows)
-    ])
-    col_lengths = np.array([
-        np.sum(lengths[2 * c * n_rows: 2 * c * n_rows + 2 * n_rows + 1: 2])
-        for c in range(n_cols)
-    ])
+    row_lengths = np.array(
+        [
+            np.sum(
+                lengths[1 + 2 * r * n_cols : 1 + 2 * r * n_cols + 2 * n_cols + 1 : 2]
+            )
+            for r in range(n_rows)
+        ]
+    )
+    col_lengths = np.array(
+        [
+            np.sum(lengths[2 * c * n_rows : 2 * c * n_rows + 2 * n_rows + 1 : 2])
+            for c in range(n_cols)
+        ]
+    )
     avg_row_diff = np.around(
         (np.sqrt(np.sum((row_lengths - box_w) ** 2)) / n_rows) * 100 / box_w,
         decimal_places,

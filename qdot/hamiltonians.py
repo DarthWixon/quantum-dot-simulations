@@ -31,8 +31,9 @@ def spin_rotator(alpha, beta, gamma, initial_spin):
     return R * initial_spin * R.dag()
 
 
-def faraday_hamiltonian(zeeman_term, quadrupolar_term, biaxiality,
-                        particle_spin, alpha, beta, gamma):
+def faraday_hamiltonian(
+    zeeman_term, quadrupolar_term, biaxiality, particle_spin, alpha, beta, gamma
+):
     """
     Nuclear spin Hamiltonian in Faraday geometry (static B along z).
 
@@ -64,8 +65,9 @@ def faraday_hamiltonian(zeeman_term, quadrupolar_term, biaxiality,
     )
 
 
-def voigt_hamiltonian(zeeman_term, quadrupolar_term, biaxiality,
-                      particle_spin, alpha, beta, gamma):
+def voigt_hamiltonian(
+    zeeman_term, quadrupolar_term, biaxiality, particle_spin, alpha, beta, gamma
+):
     """
     Nuclear spin Hamiltonian in Voigt geometry (static B along x).
 
@@ -118,8 +120,9 @@ def rf_hamiltonian(particle_spin, B_x, B_y, B_z, gamma_n=1):
     return -gamma_n * (B_x * I_x + B_y * I_y + B_z * I_z)
 
 
-def transition_rate(mixing_hamiltonian, init_state, final_state,
-                    E_init, E_final, omega_rf, delta=10e3):
+def transition_rate(
+    mixing_hamiltonian, init_state, final_state, E_init, E_final, omega_rf, delta=10e3
+):
     """
     Transition rate between two eigenstates under an RF perturbation.
 
@@ -136,6 +139,6 @@ def transition_rate(mixing_hamiltonian, init_state, final_state,
     Returns:
         float: Transition rate.
     """
-    prob = np.abs(mixing_hamiltonian.matrix_element(final_state, init_state))
+    prob = np.abs(mixing_hamiltonian.matrix_element(final_state, init_state)) ** 2
     lorentzian = (2 * delta) / ((E_final - E_init - omega_rf) ** 2 + delta**2)
     return np.real_if_close(prob * lorentzian)
