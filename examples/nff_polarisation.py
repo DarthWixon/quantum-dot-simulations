@@ -1,9 +1,22 @@
-import matplotlib
-matplotlib.use("Agg")
+"""
+Nuclear Frequency Focussing (NFF) polarisation curves.
 
-import numpy as np
+Two panels:
+  Left  — z-polarisation vs dephasing strength γ for three pulse phases.
+           γ=1 is no dephasing; γ=0.5 is maximum dephasing.
+  Right — z-polarisation in the zero-dephasing limit as the pulse phase
+           sweeps 0 → 2π.
+
+Output: examples/output/nff_polarisation.png
+"""
+
+import pathlib
+
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import os
+import numpy as np
 
 from qdot.nff import dephasing_polarisation_curve, non_dephased_polarisation
 
@@ -36,6 +49,6 @@ ax_right.set_xticklabels(["0", r"$\pi/2$", r"$\pi$", r"$3\pi/2$", r"$2\pi$"])
 
 plt.tight_layout()
 
-output_dir = os.path.join(os.path.dirname(__file__), "..", "claude-test-graphs")
-os.makedirs(output_dir, exist_ok=True)
-fig.savefig(os.path.join(output_dir, "nff_polarisation.png"), dpi=150)
+output_dir = pathlib.Path(__file__).parent / "output"
+output_dir.mkdir(exist_ok=True)
+fig.savefig(output_dir / "nff_polarisation.png", dpi=150)
