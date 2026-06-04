@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Known limitations
+
+`human-todo.` in the repo root lists issues that require the physicist's judgement — weak strain magnitudes in the toy model, boundary artefacts, architectural decisions about examples. Do not flag or attempt to fix items listed there.
+
 ## Git workflow
 
 All changes must be made on a separate branch, never directly on `main`. Create a new branch before starting any task:
