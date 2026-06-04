@@ -9,7 +9,9 @@ import numpy as np
 import qutip
 
 
-def spin_rotator(alpha, beta, gamma, initial_spin):
+def spin_rotator(
+    alpha: float, beta: float, gamma: float, initial_spin: qutip.Qobj
+) -> qutip.Qobj:
     """
     Rotate a quantum spin operator using Euler angles (X-Y-Z convention).
 
@@ -32,8 +34,14 @@ def spin_rotator(alpha, beta, gamma, initial_spin):
 
 
 def faraday_hamiltonian(
-    zeeman_term, quadrupolar_term, biaxiality, particle_spin, alpha, beta, gamma
-):
+    zeeman_term: float,
+    quadrupolar_term: float,
+    biaxiality: float,
+    particle_spin: float,
+    alpha: float,
+    beta: float,
+    gamma: float,
+) -> qutip.Qobj:
     """
     Nuclear spin Hamiltonian in Faraday geometry (static B along z).
 
@@ -66,8 +74,14 @@ def faraday_hamiltonian(
 
 
 def voigt_hamiltonian(
-    zeeman_term, quadrupolar_term, biaxiality, particle_spin, alpha, beta, gamma
-):
+    zeeman_term: float,
+    quadrupolar_term: float,
+    biaxiality: float,
+    particle_spin: float,
+    alpha: float,
+    beta: float,
+    gamma: float,
+) -> qutip.Qobj:
     """
     Nuclear spin Hamiltonian in Voigt geometry (static B along x).
 
@@ -97,7 +111,13 @@ def voigt_hamiltonian(
     )
 
 
-def rf_hamiltonian(particle_spin, B_x, B_y, B_z, gamma_n=1):
+def rf_hamiltonian(
+    particle_spin: float,
+    B_x: float,
+    B_y: float,
+    B_z: float,
+    gamma_n: float = 1,
+) -> qutip.Qobj:
     """
     RF perturbation Hamiltonian for NMR transition rate calculations.
 
@@ -121,8 +141,14 @@ def rf_hamiltonian(particle_spin, B_x, B_y, B_z, gamma_n=1):
 
 
 def transition_rate(
-    mixing_hamiltonian, init_state, final_state, E_init, E_final, omega_rf, delta=10e3
-):
+    mixing_hamiltonian: qutip.Qobj,
+    init_state: qutip.Qobj,
+    final_state: qutip.Qobj,
+    E_init: float,
+    E_final: float,
+    omega_rf: float,
+    delta: float = 10e3,
+) -> float:
     """
     Transition rate between two eigenstates under an RF perturbation.
 

@@ -16,6 +16,20 @@ Two parameter sets are provided:
     old_species_dict — Sundfors (1974) values, for comparison with older literature
 """
 
+from typing import TypedDict
+
+
+class SpeciesParameters(TypedDict):
+    short_name: str
+    name: str
+    graph_name: str
+    particle_spin: float
+    zeeman_frequency_per_tesla: float
+    quadrupole_moment: float
+    S11: float
+    S44: float
+
+
 In_115 = {
     "short_name": "In_115",
     "name": "Indium 115",
@@ -104,9 +118,14 @@ As_75_Old = {
     "S44": 7.94e22,
 }
 
-species_dict = {"Ga69": Ga_69, "Ga71": Ga_71, "As75": As_75, "In115": In_115}
+species_dict: dict[str, SpeciesParameters] = {
+    "Ga69": Ga_69,
+    "Ga71": Ga_71,
+    "As75": As_75,
+    "In115": In_115,
+}
 
-old_species_dict = {
+old_species_dict: dict[str, SpeciesParameters] = {
     "Ga69": Ga_69_Old,
     "Ga71": Ga_71_Old,
     "As75": As_75_Old,

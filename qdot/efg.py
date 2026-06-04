@@ -11,7 +11,7 @@ from qdot.isotopes import species_dict, old_species_dict
 _VALID_SPECIES = frozenset(species_dict)
 
 
-def euler_angles_from_rot_mat(rot_mat):
+def euler_angles_from_rot_mat(rot_mat: np.ndarray) -> tuple[float, float, float]:
     """
     Extract Euler angles from a rotation matrix.
 
@@ -43,7 +43,13 @@ def euler_angles_from_rot_mat(rot_mat):
     return alpha, beta, gamma
 
 
-def calculate_efg(nuclear_species, xx_array, xz_array, zz_array, use_sundfors=False):
+def calculate_efg(
+    nuclear_species: str,
+    xx_array: np.ndarray,
+    xz_array: np.ndarray,
+    zz_array: np.ndarray,
+    use_sundfors: bool = False,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Calculate the EFG tensor at every lattice site from the local strain tensor.
 
@@ -63,7 +69,9 @@ def calculate_efg(nuclear_species, xx_array, xz_array, zz_array, use_sundfors=Fa
         euler_angles (ndarray): Euler angles to the PAF at each site, shape (n, m, 3).
     """
     if nuclear_species not in _VALID_SPECIES:
-        raise ValueError(f"nuclear_species must be one of {sorted(_VALID_SPECIES)}, got {nuclear_species!r}")
+        raise ValueError(
+            f"nuclear_species must be one of {sorted(_VALID_SPECIES)}, got {nuclear_species!r}"
+        )
     params = old_species_dict if use_sundfors else species_dict
     species = params[nuclear_species]
 
@@ -154,7 +162,9 @@ def calculate_efg_vectorised(
         euler_angles (ndarray): shape (n, m, 3).
     """
     if nuclear_species not in _VALID_SPECIES:
-        raise ValueError(f"nuclear_species must be one of {sorted(_VALID_SPECIES)}, got {nuclear_species!r}")
+        raise ValueError(
+            f"nuclear_species must be one of {sorted(_VALID_SPECIES)}, got {nuclear_species!r}"
+        )
     params = old_species_dict if use_sundfors else species_dict
     species = params[nuclear_species]
 

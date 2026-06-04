@@ -7,7 +7,7 @@ name = "qdot"
 version = "0.1.0"
 description = "Nuclear spin dynamics simulations for InGaAs quantum dots"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.25",
     "scipy>=1.11",  # original code pinned <1.11 due to a suspected scipy.optimize breakage
