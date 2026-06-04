@@ -8,6 +8,7 @@ Pass save_path (str or Path) to save instead of displaying.
 import pathlib
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import matplotlib.cm as cm
 from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
@@ -20,7 +21,11 @@ from qdot.isotopes import species_dict
 # Equivalent B-field maps
 # ---------------------------------------------------------------------------
 
-def plot_equivalent_b_field(nuclear_species, b_field_array, save_path=None):
+def plot_equivalent_b_field(
+    nuclear_species: str,
+    b_field_array: np.ndarray,
+    save_path: str | pathlib.Path | None = None,
+) -> Figure:
     """
     Heatmap of the equivalent magnetic field for one nuclear species.
 
@@ -42,7 +47,11 @@ def plot_equivalent_b_field(nuclear_species, b_field_array, save_path=None):
     return fig
 
 
-def plot_all_equivalent_b_fields(b_field_arrays, region_bounds=None, save_path=None):
+def plot_all_equivalent_b_fields(
+    b_field_arrays: list[np.ndarray],
+    region_bounds: list[int] | None = None,
+    save_path: str | pathlib.Path | None = None,
+) -> Figure:
     """
     2×2 grid of equivalent B-field heatmaps, one per nuclear species.
 
@@ -78,8 +87,13 @@ def plot_all_equivalent_b_fields(b_field_arrays, region_bounds=None, save_path=N
 # Strain toy model
 # ---------------------------------------------------------------------------
 
-def plot_strain_lattice(simulated_species, unstrained_positions, strained_positions,
-                        real_atoms=True, save_path=None):
+def plot_strain_lattice(
+    simulated_species: np.ndarray,
+    unstrained_positions: np.ndarray,
+    strained_positions: np.ndarray,
+    real_atoms: bool = True,
+    save_path: str | pathlib.Path | None = None,
+) -> Figure:
     """
     Overlay plot of unstrained and strained lattice positions and bonds.
 
@@ -143,7 +157,11 @@ def plot_strain_lattice(simulated_species, unstrained_positions, strained_positi
     return fig
 
 
-def plot_strain_tensors(strain_tensor_array, absolute_values=False, save_path=None):
+def plot_strain_tensors(
+    strain_tensor_array: np.ndarray,
+    absolute_values: bool = False,
+    save_path: str | pathlib.Path | None = None,
+) -> Figure:
     """
     Three-panel plot of ε_xx, ε_xy, and ε_yy strain components.
 
@@ -180,7 +198,10 @@ def plot_strain_tensors(strain_tensor_array, absolute_values=False, save_path=No
 # Concentration maps
 # ---------------------------------------------------------------------------
 
-def plot_concentration(conc_data, save_path=None):
+def plot_concentration(
+    conc_data: np.ndarray,
+    save_path: str | pathlib.Path | None = None,
+) -> Figure:
     """
     Heatmap of In115 concentration across the dot.
 
@@ -202,7 +223,11 @@ def plot_concentration(conc_data, save_path=None):
     return fig
 
 
-def plot_concentration_with_regions(conc_data, rect_specs, save_path=None):
+def plot_concentration_with_regions(
+    conc_data: np.ndarray,
+    rect_specs: list[list[float]],
+    save_path: str | pathlib.Path | None = None,
+) -> Figure:
     """
     Concentration heatmap with highlighted rectangular regions overlaid.
 
@@ -234,8 +259,14 @@ def plot_concentration_with_regions(conc_data, rect_specs, save_path=None):
 # Correlator graphs
 # ---------------------------------------------------------------------------
 
-def plot_correlator(timerange, correlator_data, nuclear_species,
-                    applied_field, log_time=False, save_path=None):
+def plot_correlator(
+    timerange: np.ndarray,
+    correlator_data: np.ndarray,
+    nuclear_species: str,
+    applied_field: float,
+    log_time: bool = False,
+    save_path: str | pathlib.Path | None = None,
+) -> Figure:
     """
     Plot spin correlator time series for all three axes.
 
@@ -265,8 +296,14 @@ def plot_correlator(timerange, correlator_data, nuclear_species,
     return fig
 
 
-def plot_fourier_transform(timerange, correlator_data, timestep,
-                           nuclear_species, applied_field, save_path=None):
+def plot_fourier_transform(
+    timerange: np.ndarray,
+    correlator_data: np.ndarray,
+    timestep: float,
+    nuclear_species: str,
+    applied_field: float,
+    save_path: str | pathlib.Path | None = None,
+) -> Figure:
     """
     Plot the Fourier transform of a linearly-spaced correlator time series.
 
@@ -301,7 +338,7 @@ def plot_fourier_transform(timerange, correlator_data, timestep,
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _save_or_show(fig, save_path):
+def _save_or_show(fig: Figure, save_path: str | pathlib.Path | None) -> None:
     if save_path is not None:
         fig.savefig(pathlib.Path(save_path))
     else:

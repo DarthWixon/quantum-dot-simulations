@@ -10,6 +10,7 @@ uses multiprocessing.Pool.starmap and scales to available CPU cores.
 """
 
 import multiprocessing
+import pathlib
 import numpy as np
 import qutip
 import scipy.constants as const
@@ -19,7 +20,7 @@ from qdot.hamiltonians import faraday_hamiltonian
 from qdot.io import load_efg
 
 
-def spin_correlator(t, nuclear_hamiltonian, spin_axis):
+def spin_correlator(t: float, nuclear_hamiltonian: qutip.Qobj, spin_axis: str) -> float | None:
     """
     Time correlation function <I_α(t) I_α(0)> for a single nuclear spin.
 
@@ -48,8 +49,17 @@ def spin_correlator(t, nuclear_hamiltonian, spin_axis):
     return np.real_if_close((U_plus * I_alpha * U_minus * I_alpha * rho).tr())
 
 
-def site_correlator(t, zeeman_per_tesla, quadrupole_coupling, spin, biaxiality,
-                    euler_angles, V_ZZ, applied_field, spin_axis):
+def site_correlator(
+    t: float,
+    zeeman_per_tesla: float,
+    quadrupole_coupling: float,
+    spin: float,
+    biaxiality: float,
+    euler_angles: np.ndarray | list[float],
+    V_ZZ: float,
+    applied_field: float,
+    spin_axis: str,
+) -> float:
     """
     Spin correlator at a single lattice site.
 
@@ -76,9 +86,19 @@ def site_correlator(t, zeeman_per_tesla, quadrupole_coupling, spin, biaxiality,
     return spin_correlator(t, H, spin_axis)
 
 
-def _parallel_site_correlator(t, zeeman_per_tesla, quadrupole_coupling, spin,
-                               biaxiality, alpha, beta, gamma, V_ZZ,
-                               applied_field, spin_axis):
+def _parallel_site_correlator(
+    t: float,
+    zeeman_per_tesla: float,
+    quadrupole_coupling: float,
+    spin: float,
+    biaxiality: float,
+    alpha: float,
+    beta: float,
+    gamma: float,
+    V_ZZ: float,
+    applied_field: float,
+    spin_axis: str,
+) -> float | None:
     """Single-site correlator with unpacked Euler angles, suitable for Pool.starmap."""
     H = faraday_hamiltonian(
         zeeman_per_tesla * applied_field,
@@ -88,8 +108,15 @@ def _parallel_site_correlator(t, zeeman_per_tesla, quadrupole_coupling, spin,
     return spin_correlator(t, H, spin_axis)
 
 
-def _build_starmap_args(t, applied_field, spin_axis, nuclear_species,
-                        region_bounds, data_dir, step_size):
+def _build_starmap_args(
+    t: float,
+    applied_field: float,
+    spin_axis: str,
+    nuclear_species: str,
+    region_bounds: list[int],
+    data_dir: str | pathlib.Path,
+    step_size: int,
+) -> tuple[int, list[tuple]]:
     """Package per-site parameters into a list suitable for Pool.starmap."""
     eta, _, _, V_ZZ_arr, euler_angles = load_efg(
         data_dir, nuclear_species, region_bounds, step_size
@@ -125,8 +152,15 @@ def _build_starmap_args(t, applied_field, spin_axis, nuclear_species,
     ))
 
 
-def run_correlator_series(data_dir, timerange, applied_field, nuclear_species,
-                          region_bounds, step_size=100, chunksize=25):
+def run_correlator_series(
+    data_dir: str | pathlib.Path,
+    timerange: np.ndarray,
+    applied_field: float,
+    nuclear_species: str,
+    region_bounds: list[int],
+    step_size: int = 100,
+    chunksize: int = 25,
+) -> np.ndarray:
     """
     Compute the spin correlator time series for one species in parallel.
 
@@ -162,9 +196,17 @@ def run_correlator_series(data_dir, timerange, applied_field, nuclear_species,
     return results
 
 
-def run_log_correlator_simulation(data_dir, save_dir, min_time_exp, max_time_exp,
-                                  n_times, applied_field,
-                                  region_bounds=None, step_size=100, chunksize=25):
+def run_log_correlator_simulation(
+    data_dir: str | pathlib.Path,
+    save_dir: str | pathlib.Path,
+    min_time_exp: int,
+    max_time_exp: int,
+    n_times: int,
+    applied_field: float,
+    region_bounds: list[int] | None = None,
+    step_size: int = 100,
+    chunksize: int = 25,
+) -> None:
     """
     Compute and save log-spaced correlator data for all four nuclear species.
 
@@ -209,9 +251,17 @@ def run_log_correlator_simulation(data_dir, save_dir, min_time_exp, max_time_exp
     )
 
 
-def run_linear_correlator_simulation(data_dir, save_dir, min_time, max_time, timestep,
-                                     applied_field, region_bounds=None,
-                                     step_size=100, chunksize=25):
+def run_linear_correlator_simulation(
+    data_dir: str | pathlib.Path,
+    save_dir: str | pathlib.Path,
+    min_time: float,
+    max_time: float,
+    timestep: float,
+    applied_field: float,
+    region_bounds: list[int] | None = None,
+    step_size: int = 100,
+    chunksize: int = 25,
+) -> None:
     """
     Compute and save linearly-spaced correlator data for all four nuclear species.
 

@@ -12,13 +12,21 @@ git checkout -b <branch-name>
 
 ## Setup
 
-Install the package in editable mode (requires Python 3.9+):
+Install the package in editable mode (requires Python 3.10+):
 
 ```bash
 pip install -e ".[dev]"
 ```
 
 Key constraint: `scipy<1.11` — changes to `scipy.optimize` in 1.11 break the strain simulation's energy minimisation.
+
+## Python style
+
+Target Python 3.10+. Use native syntax throughout — no compatibility shims:
+
+- Union types: `X | Y` and `X | None`, not `Union[X, Y]` or `Optional[X]`
+- Built-in generics: `list[int]`, `dict[str, X]`, `tuple[float, ...]`, not `List`, `Dict`, `Tuple` from `typing`
+- No `from __future__ import annotations`
 
 Run tests:
 
