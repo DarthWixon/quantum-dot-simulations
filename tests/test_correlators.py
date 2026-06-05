@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 import qutip
 from qdot.hamiltonians import faraday_hamiltonian
-from qdot.correlators import spin_correlator, site_correlator
+from qdot.correlators import spin_correlator, site_correlator, run_correlator_series
+from qdot.io import save_efg
 
 
 def _simple_hamiltonian():
@@ -75,3 +76,45 @@ def test_site_correlator_matches_spin_correlator():
     )
     expected = spin_correlator(t, H, "z")
     assert abs(result - expected) < 1e-10
+
+
+# ---------------------------------------------------------------------------
+# run_correlator_series
+# ---------------------------------------------------------------------------
+
+_BOUNDS = [0, 2, 0, 2]
+_RNG = np.random.default_rng(7)
+
+
+@pytest.fixture
+def efg_dir(tmp_path):
+    """Write a tiny (2×2) synthetic EFG archive for Ga69 to tmp_path."""
+    shape = (2, 2)
+    eta = _RNG.uniform(0.0, 1.0, shape)
+    V_XX = _RNG.uniform(-1e14, 1e14, shape)
+    V_YY = _RNG.uniform(-1e14, 1e14, shape)
+    V_ZZ = _RNG.uniform(1e13, 1e14, shape)
+    euler_angles = _RNG.uniform(0, 2 * np.pi, (*shape, 3))
+    save_efg(tmp_path, "Ga69", _BOUNDS, 1, eta, V_XX, V_YY, V_ZZ, euler_angles)
+    return tmp_path
+
+
+def test_run_correlator_series_output_shape(efg_dir):
+    timerange = np.array([0.0, 1e-9])
+    result = run_correlator_series(
+        efg_dir, timerange, 1.0, "Ga69", _BOUNDS, step_size=1
+    )
+    assert result.shape == (3, 2)
+
+
+def test_run_correlator_series_values_are_finite(efg_dir):
+    timerange = np.array([0.0, 1e-9])
+    result = run_correlator_series(
+        efg_dir, timerange, 1.0, "Ga69", _BOUNDS, step_size=1
+    )
+    assert np.all(np.isfinite(result))
+
+
+def test_run_correlator_series_invalid_species_raises(efg_dir):
+    with pytest.raises(ValueError, match="nuclear_species"):
+        run_correlator_series(efg_dir, np.array([0.0]), 1.0, "Xx99", _BOUNDS)

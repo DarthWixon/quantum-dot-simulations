@@ -267,3 +267,65 @@ class TestVectorisedEFG:
                     atol=1e-10,
                     err_msg=f"Euler reconstruction failed at site ({i},{j})",
                 )
+
+
+# ---------------------------------------------------------------------------
+# Multi-species Euler angle coverage
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("species", ["Ga71", "As75", "In115"])
+def test_euler_angles_reconstruct_rotation_all_species(species):
+    """
+    Euler angles extracted by calculate_efg_vectorised must reconstruct the
+    rotation matrix for all species, not just Ga69.
+
+    Uses the same round-trip check as test_euler_angles_reconstruct_rotation
+    but parameterised over the three remaining species.
+    """
+    from qdot.isotopes import species_dict as sd
+
+    def euler_to_rot(alpha, beta, gamma):
+        ca, sa = np.cos(alpha), np.sin(alpha)
+        cb, sb = np.cos(beta), np.sin(beta)
+        cg, sg = np.cos(gamma), np.sin(gamma)
+        Rx = np.array([[1, 0, 0], [0, ca, -sa], [0, sa, ca]])
+        Ry = np.array([[cb, 0, sb], [0, 1, 0], [-sb, 0, cb]])
+        Rz = np.array([[cg, -sg, 0], [sg, cg, 0], [0, 0, 1]])
+        return Rz @ Ry @ Rx
+
+    n, m = 4, 4
+    xx, xz, zz = _make_strain((n, m), seed=42)
+
+    S11 = sd[species]["S11"]
+    S12 = -S11 / 2
+    S44 = sd[species]["S44"]
+
+    V = np.zeros((n, m, 3, 3))
+    V[:, :, 0, 0] = S12 * (zz - xx)
+    V[:, :, 1, 1] = (S12 + S11) * xx + S12 * zz
+    V[:, :, 2, 2] = 2 * S12 * xx + S11 * zz
+    V[:, :, 0, 2] = V[:, :, 2, 0] = S44 * xz
+    V[:, :, 1, 2] = V[:, :, 2, 1] = S44 * xz
+
+    w, v = np.linalg.eigh(V)
+    sort_idx = np.argsort(np.abs(w), axis=-1)[:, :, ::-1]
+    sort_idx_v = np.broadcast_to(sort_idx[:, :, np.newaxis, :], (n, m, 3, 3))
+    v_sorted = np.take_along_axis(v, sort_idx_v, axis=-1)
+    rot = np.stack(
+        [v_sorted[:, :, :, 2], v_sorted[:, :, :, 1], v_sorted[:, :, :, 0]], axis=-1
+    )
+    rot[:, :, :, 2] = np.cross(rot[:, :, :, 0], rot[:, :, :, 1])
+
+    _, _, _, _, euler_v = calculate_efg_vectorised(species, xx, xz, zz)
+
+    for i in range(n):
+        for j in range(m):
+            a, b, g = euler_v[i, j]
+            R_rec = euler_to_rot(a, b, g)
+            np.testing.assert_allclose(
+                R_rec,
+                rot[i, j],
+                atol=1e-10,
+                err_msg=f"{species}: Euler reconstruction failed at ({i},{j})",
+            )
