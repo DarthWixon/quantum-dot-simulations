@@ -7,7 +7,6 @@ import time
 import matplotlib.pyplot as pyplot
 import matplotlib
 
-
 matplotlib.rcParams.update({"font.size": 26})
 
 

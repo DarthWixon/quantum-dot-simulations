@@ -69,7 +69,7 @@ This is a Python library simulating nuclear spin dynamics in InGaAs quantum dots
 
 ### Simulation pipeline
 
-1. **Load strain data** (`qdot.io.load_sokolov_data`) — ε_xx, ε_xz, ε_zz from the Sokolov dataset (DOI: 10.1103/PhysRevB.93.045301).
+1. **Load strain data** (`qdot.io.load_strain_data`) — ε_xx, ε_xz, ε_zz from text files (e.g. the Sokolov dataset, DOI: 10.1103/PhysRevB.93.045301).
 2. **Calculate EFG tensors** (`qdot.efg.calculate_efg`) — strain → η (biaxiality), V_XX/V_YY/V_ZZ, Euler angles per site. Save with `qdot.io.save_efg`.
 3. **Build Hamiltonians** (`qdot.hamiltonians`) — Zeeman + quadrupolar terms in Faraday or Voigt geometry, rotated to the lab frame via Euler angles.
 4. **Calculate correlators** (`qdot.correlators.run_correlator_series`) — spin-spin time correlator averaged over the dot, parallelised over sites.
@@ -83,6 +83,6 @@ This is a Python library simulating nuclear spin dynamics in InGaAs quantum dots
 - Hamiltonians are QuTiP `Qobj` objects.
 - `use_sundfors=True` selects the older Sundfors (1974) gradient-elastic tensor values; default is Checkhovich.
 
-### Legacy scripts
+### Archive
 
-The original research scripts remain in their old folders (`correlator/`, `quadrupolar/`, `NMR/`, etc.) for reference. They have hardcoded paths to `/home/will/Documents/...` and will not run without modification. The `qdot/` package supersedes them.
+The original research scripts live under `archive/`. They are historical reference only — do not review, modify, or flag issues in them. The `qdot/` package supersedes all of them.

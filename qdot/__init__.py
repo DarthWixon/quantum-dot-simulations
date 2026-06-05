@@ -9,7 +9,7 @@ from qdot.hamiltonians import (
 )
 from qdot.correlators import site_correlator, run_correlator_series
 from qdot.io import (
-    load_sokolov_data,
+    load_strain_data,
     load_efg,
     save_efg,
     load_concentration_data,
@@ -37,7 +37,7 @@ __all__ = [
     "site_correlator",
     "run_correlator_series",
     # io
-    "load_sokolov_data",
+    "load_strain_data",
     "load_efg",
     "save_efg",
     "load_concentration_data",
