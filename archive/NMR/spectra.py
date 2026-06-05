@@ -19,7 +19,6 @@ import scipy.signal
 import scipy.integrate
 from itertools import permutations
 
-
 hbar = scipy.constants.hbar
 e = scipy.constants.e
 h = scipy.constants.h

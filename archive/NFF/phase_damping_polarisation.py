@@ -2,7 +2,6 @@ import numpy
 import matplotlib.pyplot as pyplot
 import qutip
 
-
 inital_DM = qutip.qobj.Qobj(
     numpy.array([[1, 1], [0, 1]])
 )  # start in maximally mixed state

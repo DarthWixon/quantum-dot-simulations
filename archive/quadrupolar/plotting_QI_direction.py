@@ -13,7 +13,6 @@ import backbone_quadrupolar_functions as bqf
 import isotope_parameters as ISOP
 import scipy.constants as constants
 
-
 # this file needs to be updated to take advantage of my archives of data for the EFG tensor, rather than recalculating it each time.
 # also need to update graphs so they display which species, and using what data
 

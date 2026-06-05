@@ -83,6 +83,6 @@ This is a Python library simulating nuclear spin dynamics in InGaAs quantum dots
 - Hamiltonians are QuTiP `Qobj` objects.
 - `use_sundfors=True` selects the older Sundfors (1974) gradient-elastic tensor values; default is Checkhovich.
 
-### Legacy scripts
+### Archive
 
-The original research scripts remain in their old folders (`correlator/`, `quadrupolar/`, `NMR/`, etc.) for reference. They have hardcoded paths to `/home/will/Documents/...` and will not run without modification. The `qdot/` package supersedes them.
+The original research scripts live under `archive/`. They are historical reference only — do not review, modify, or flag issues in them. The `qdot/` package supersedes all of them.

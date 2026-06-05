@@ -8,7 +8,6 @@ from backbone_quadrupolar_functions import graph_path
 from backbone_quadrupolar_functions import data_path
 import matplotlib.pyplot as plt
 
-
 conc_data = sio.loadmat(f"{data_path}conc_data")
 x = conc_data["x"]
 y = conc_data["y"]
