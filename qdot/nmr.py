@@ -79,15 +79,9 @@ def absorption_spectrum(
     Q = species["quadrupole_moment"]
     qcc = (3 * e * Q) / (2 * h * spin * (2 * spin - 1))
 
-    # Flatten the EFG arrays back to (n, m) indexing for site lookup
-    n_sites = eta_arr.size
-    n = V_ZZ_arr.shape[0]
-    m = V_ZZ_arr.shape[1] if V_ZZ_arr.ndim > 1 else 1
-    eta = eta_arr.reshape(n, m)[x, y] if V_ZZ_arr.ndim > 1 else eta_arr[x]
-    V_ZZ = V_ZZ_arr.reshape(n, m)[x, y] if V_ZZ_arr.ndim > 1 else V_ZZ_arr[x]
-
-    # euler_arr is (n_sites, 3) from load_efg
-    site_idx = x * m + y if V_ZZ_arr.ndim > 1 else x
+    eta = eta_arr[x, y]
+    V_ZZ = V_ZZ_arr[x, y]
+    site_idx = x * V_ZZ_arr.shape[1] + y
     alpha, beta, gamma = euler_arr[site_idx]
 
     zeeman_term = zeeman_per_tesla * applied_field
@@ -132,6 +126,8 @@ def varied_field_spectra(
     location: tuple[int, int],
     data_dir: pathlib.Path | str,
     region_bounds: list[int] | None = None,
+    rf_field: float = 5e-3,
+    use_sundfors: bool = False,
 ) -> list[dict]:
     """
     Compute absorption spectra at multiple applied field strengths.
@@ -144,6 +140,8 @@ def varied_field_spectra(
         location (tuple): (x, y) site index.
         data_dir: Directory containing pre-computed EFG archives.
         region_bounds (list): [left, right, top, bottom]. Defaults to dot region.
+        rf_field (float): RF field amplitude. Default 5 mT.
+        use_sundfors (bool): Use Sundfors parameter set if True.
 
     Returns:
         list of dict: Each entry has keys "applied_field", "rf_freq_list", "data".
@@ -160,6 +158,8 @@ def varied_field_spectra(
                 location,
                 data_dir,
                 region_bounds,
+                rf_field=rf_field,
+                use_sundfors=use_sundfors,
             ),
         }
         for B in applied_field_list
