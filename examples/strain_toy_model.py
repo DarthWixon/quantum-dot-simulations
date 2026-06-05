@@ -28,6 +28,7 @@ Three scenarios
 """
 
 import matplotlib
+
 matplotlib.use("Agg")
 
 import pathlib
@@ -53,8 +54,9 @@ def run_and_save(label, lattice_type, in_positions=None):
     lattice_path = OUTPUT_DIR / f"strain_toy_{label}_lattice.png"
     tensor_path = OUTPUT_DIR / f"strain_toy_{label}_tensor.png"
 
-    plot_strain_lattice(species, unstrained, strained, real_atoms=True,
-                        save_path=lattice_path)
+    plot_strain_lattice(
+        species, unstrained, strained, real_atoms=True, save_path=lattice_path
+    )
     plot_strain_tensors(tensors, save_path=tensor_path)
 
     print(f"  minimisation: {t}s  |  row error: {row_err}%  |  col error: {col_err}%")

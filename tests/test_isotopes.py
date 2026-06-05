@@ -2,8 +2,14 @@ import pytest
 from qdot.isotopes import species_dict, old_species_dict
 
 REQUIRED_FIELDS = [
-    "short_name", "name", "graph_name", "particle_spin",
-    "zeeman_frequency_per_tesla", "quadrupole_moment", "S11", "S44",
+    "short_name",
+    "name",
+    "graph_name",
+    "particle_spin",
+    "zeeman_frequency_per_tesla",
+    "quadrupole_moment",
+    "S11",
+    "S44",
 ]
 ALL_SPECIES = ["Ga69", "Ga71", "As75", "In115"]
 

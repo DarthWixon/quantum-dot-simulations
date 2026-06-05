@@ -56,25 +56,26 @@ def test_calculate_efg_sundfors_gives_different_result():
 # Vectorised implementation
 # ---------------------------------------------------------------------------
 
+
 def _make_strain(shape, seed=0):
     rng = np.random.default_rng(seed)
-    xx = rng.uniform(-0.02,  0.02, shape)
-    xz = rng.uniform(-0.01,  0.01, shape)
-    zz = rng.uniform(-0.02,  0.02, shape)
+    xx = rng.uniform(-0.02, 0.02, shape)
+    xz = rng.uniform(-0.01, 0.01, shape)
+    zz = rng.uniform(-0.02, 0.02, shape)
     return xx, xz, zz
-
-
 
 
 class TestVectorisedEFG:
     def test_output_shapes_match_scalar(self):
         n, m = 5, 7
         xx, xz, zz = _make_strain((n, m))
-        eta_v, vxx_v, vyy_v, vzz_v, euler_v = calculate_efg_vectorised("Ga69", xx, xz, zz)
-        assert eta_v.shape   == (n, m)
-        assert vxx_v.shape   == (n, m)
-        assert vyy_v.shape   == (n, m)
-        assert vzz_v.shape   == (n, m)
+        eta_v, vxx_v, vyy_v, vzz_v, euler_v = calculate_efg_vectorised(
+            "Ga69", xx, xz, zz
+        )
+        assert eta_v.shape == (n, m)
+        assert vxx_v.shape == (n, m)
+        assert vyy_v.shape == (n, m)
+        assert vzz_v.shape == (n, m)
         assert euler_v.shape == (n, m, 3)
 
     def test_eigenvalues_match_scalar(self):
@@ -83,12 +84,15 @@ class TestVectorisedEFG:
         for species in ["Ga69", "Ga71", "As75", "In115"]:
             _, vxx_s, vyy_s, vzz_s, _ = calculate_efg(species, xx, xz, zz)
             _, vxx_v, vyy_v, vzz_v, _ = calculate_efg_vectorised(species, xx, xz, zz)
-            np.testing.assert_allclose(vzz_v, vzz_s, rtol=1e-10,
-                                       err_msg=f"{species}: V_ZZ mismatch")
-            np.testing.assert_allclose(vyy_v, vyy_s, rtol=1e-10,
-                                       err_msg=f"{species}: V_YY mismatch")
-            np.testing.assert_allclose(vxx_v, vxx_s, rtol=1e-10,
-                                       err_msg=f"{species}: V_XX mismatch")
+            np.testing.assert_allclose(
+                vzz_v, vzz_s, rtol=1e-10, err_msg=f"{species}: V_ZZ mismatch"
+            )
+            np.testing.assert_allclose(
+                vyy_v, vyy_s, rtol=1e-10, err_msg=f"{species}: V_YY mismatch"
+            )
+            np.testing.assert_allclose(
+                vxx_v, vxx_s, rtol=1e-10, err_msg=f"{species}: V_XX mismatch"
+            )
 
     def test_eta_matches_scalar(self):
         xx, xz, zz = _make_strain((15, 15))
@@ -111,8 +115,12 @@ class TestVectorisedEFG:
 
     def test_sundfors_gives_different_result(self):
         xx, xz, zz = _make_strain((3, 3))
-        _, _, _, vzz_new, _ = calculate_efg_vectorised("Ga69", xx, xz, zz, use_sundfors=False)
-        _, _, _, vzz_old, _ = calculate_efg_vectorised("Ga69", xx, xz, zz, use_sundfors=True)
+        _, _, _, vzz_new, _ = calculate_efg_vectorised(
+            "Ga69", xx, xz, zz, use_sundfors=False
+        )
+        _, _, _, vzz_old, _ = calculate_efg_vectorised(
+            "Ga69", xx, xz, zz, use_sundfors=True
+        )
         assert not np.allclose(vzz_new, vzz_old)
 
     def test_euler_angles_self_consistent(self):
@@ -148,9 +156,9 @@ class TestVectorisedEFG:
         sort_idx = np.argsort(np.abs(w), axis=-1)[:, :, ::-1]
         sort_idx_v = np.broadcast_to(sort_idx[:, :, np.newaxis, :], (n, m, 3, 3))
         v_sorted = np.take_along_axis(v, sort_idx_v, axis=-1)
-        rot = np.stack([v_sorted[:, :, :, 2],
-                        v_sorted[:, :, :, 1],
-                        v_sorted[:, :, :, 0]], axis=-1)
+        rot = np.stack(
+            [v_sorted[:, :, :, 2], v_sorted[:, :, :, 1], v_sorted[:, :, :, 0]], axis=-1
+        )
         # Apply the same sign fix as calculate_efg_vectorised.
         rot[:, :, :, 2] = np.cross(rot[:, :, :, 0], rot[:, :, :, 1])
 
@@ -160,8 +168,10 @@ class TestVectorisedEFG:
             for j in range(m):
                 expected = euler_angles_from_rot_mat(rot[i, j])
                 np.testing.assert_allclose(
-                    euler_v[i, j], expected, atol=1e-10,
-                    err_msg=f"Euler angle mismatch at site ({i},{j})"
+                    euler_v[i, j],
+                    expected,
+                    atol=1e-10,
+                    err_msg=f"Euler angle mismatch at site ({i},{j})",
                 )
 
     def test_rotation_matrices_are_proper(self):
@@ -172,6 +182,7 @@ class TestVectorisedEFG:
             # but we can verify via the Euler reconstruction test instead.
             # Vectorised: check det directly from the internal rotation matrices.
             from qdot.isotopes import species_dict as sd
+
             S11 = sd[species]["S11"]
             S12 = -S11 / 2
             S44 = sd[species]["S44"]
@@ -188,13 +199,15 @@ class TestVectorisedEFG:
             sort_idx = np.argsort(np.abs(w), axis=-1)[:, :, ::-1]
             sort_idx_v = np.broadcast_to(sort_idx[:, :, np.newaxis, :], (n, m, 3, 3))
             v_sorted = np.take_along_axis(v, sort_idx_v, axis=-1)
-            rot = np.stack([v_sorted[:, :, :, 2],
-                            v_sorted[:, :, :, 1],
-                            v_sorted[:, :, :, 0]], axis=-1)
+            rot = np.stack(
+                [v_sorted[:, :, :, 2], v_sorted[:, :, :, 1], v_sorted[:, :, :, 0]],
+                axis=-1,
+            )
             rot[:, :, :, 2] = np.cross(rot[:, :, :, 0], rot[:, :, :, 1])
             dets = np.linalg.det(rot)
-            np.testing.assert_allclose(dets, 1.0, atol=1e-12,
-                                       err_msg=f"{species}: rot det not +1")
+            np.testing.assert_allclose(
+                dets, 1.0, atol=1e-12, err_msg=f"{species}: rot det not +1"
+            )
 
     def test_euler_angles_reconstruct_rotation(self):
         """
@@ -204,13 +217,14 @@ class TestVectorisedEFG:
 
         Tests both the scalar and vectorised implementations.
         """
+
         def euler_to_rot(alpha, beta, gamma):
             # Actual convention: R = Rz(gamma) · Ry(beta) · Rx(alpha).
             # The docstring says Rx·Ry·Rz but the element indexing in
             # euler_angles_from_rot_mat (rot[2,0] = -sin(beta), etc.) is
             # the Slabaugh formula for Rz·Ry·Rx.
             ca, sa = np.cos(alpha), np.sin(alpha)
-            cb, sb = np.cos(beta),  np.sin(beta)
+            cb, sb = np.cos(beta), np.sin(beta)
             cg, sg = np.cos(gamma), np.sin(gamma)
             Rx = np.array([[1, 0, 0], [0, ca, -sa], [0, sa, ca]])
             Ry = np.array([[cb, 0, sb], [0, 1, 0], [-sb, 0, cb]])
@@ -222,6 +236,7 @@ class TestVectorisedEFG:
 
         # Vectorised: reconstruct from the same rotation matrices used internally.
         from qdot.isotopes import species_dict as sd
+
         S11 = sd["Ga69"]["S11"]
         S12 = -S11 / 2
         S44 = sd["Ga69"]["S44"]
@@ -235,9 +250,9 @@ class TestVectorisedEFG:
         sort_idx = np.argsort(np.abs(w), axis=-1)[:, :, ::-1]
         sort_idx_v = np.broadcast_to(sort_idx[:, :, np.newaxis, :], (n, m, 3, 3))
         v_sorted = np.take_along_axis(v, sort_idx_v, axis=-1)
-        rot = np.stack([v_sorted[:, :, :, 2],
-                        v_sorted[:, :, :, 1],
-                        v_sorted[:, :, :, 0]], axis=-1)
+        rot = np.stack(
+            [v_sorted[:, :, :, 2], v_sorted[:, :, :, 1], v_sorted[:, :, :, 0]], axis=-1
+        )
         rot[:, :, :, 2] = np.cross(rot[:, :, :, 0], rot[:, :, :, 1])
 
         _, _, _, _, euler_v = calculate_efg_vectorised("Ga69", xx, xz, zz)
@@ -247,6 +262,8 @@ class TestVectorisedEFG:
                 a, b, g = euler_v[i, j]
                 R_rec = euler_to_rot(a, b, g)
                 np.testing.assert_allclose(
-                    R_rec, rot[i, j], atol=1e-10,
-                    err_msg=f"Euler reconstruction failed at site ({i},{j})"
+                    R_rec,
+                    rot[i, j],
+                    atol=1e-10,
+                    err_msg=f"Euler reconstruction failed at site ({i},{j})",
                 )

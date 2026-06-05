@@ -18,25 +18,26 @@ from benchmarks.timing import benchmark, compare, print_result, _fmt
 # Real data: ε_xx and ε_zz in [-0.02, 0.02], ε_xz in [-0.01, 0.01].
 RNG = np.random.default_rng(42)
 
+
 def make_strain(shape):
-    xx = RNG.uniform(-0.02,  0.02, shape)
-    xz = RNG.uniform(-0.01,  0.01, shape)
-    zz = RNG.uniform(-0.02,  0.02, shape)
+    xx = RNG.uniform(-0.02, 0.02, shape)
+    xz = RNG.uniform(-0.01, 0.01, shape)
+    zz = RNG.uniform(-0.02, 0.02, shape)
     return xx, xz, zz
 
 
 TIMED_SIZES = [
-    (10,  10),
-    (50,  50),
+    (10, 10),
+    (50, 50),
     (100, 100),
     (200, 200),
 ]
 
 PROJECTION_SIZE = (400, 400)
 
-SPECIES   = "Ga69"
-N_RUNS    = 3
-WARMUP    = 1
+SPECIES = "Ga69"
+N_RUNS = 3
+WARMUP = 1
 
 # ---------------------------------------------------------------------------
 
@@ -55,14 +56,24 @@ for n, m in TIMED_SIZES:
     r_s = benchmark(
         f"scalar      {n}×{m}",
         calculate_efg,
-        SPECIES, xx, xz, zz,
-        n_runs=N_RUNS, warmup=WARMUP, n_sites=n * m,
+        SPECIES,
+        xx,
+        xz,
+        zz,
+        n_runs=N_RUNS,
+        warmup=WARMUP,
+        n_sites=n * m,
     )
     r_v = benchmark(
         f"vectorised  {n}×{m}",
         calculate_efg_vectorised,
-        SPECIES, xx, xz, zz,
-        n_runs=N_RUNS, warmup=WARMUP, n_sites=n * m,
+        SPECIES,
+        xx,
+        xz,
+        zz,
+        n_runs=N_RUNS,
+        warmup=WARMUP,
+        n_sites=n * m,
     )
     scalar_results[(n, m)] = r_s
     vector_results[(n, m)] = r_v
@@ -75,24 +86,42 @@ for n, m in TIMED_SIZES:
 # ---------------------------------------------------------------------------
 # Single large run for both — unwarmed.
 
-print(f"Large single run  {PROJECTION_SIZE[0]}×{PROJECTION_SIZE[1]}  (no warmup — approximate)")
+print(
+    f"Large single run  {PROJECTION_SIZE[0]}×{PROJECTION_SIZE[1]}  (no warmup — approximate)"
+)
 print("-" * 60)
 n, m = PROJECTION_SIZE
 xx, xz, zz = make_strain((n, m))
 
 r_s_large = benchmark(
     f"scalar      {n}×{m}",
-    calculate_efg, SPECIES, xx, xz, zz,
-    n_runs=1, warmup=0, n_sites=n * m,
+    calculate_efg,
+    SPECIES,
+    xx,
+    xz,
+    zz,
+    n_runs=1,
+    warmup=0,
+    n_sites=n * m,
 )
 r_v_large = benchmark(
     f"vectorised  {n}×{m}",
-    calculate_efg_vectorised, SPECIES, xx, xz, zz,
-    n_runs=1, warmup=0, n_sites=n * m,
+    calculate_efg_vectorised,
+    SPECIES,
+    xx,
+    xz,
+    zz,
+    n_runs=1,
+    warmup=0,
+    n_sites=n * m,
 )
 
-print(f"  scalar      time: {_fmt(r_s_large.mean)}   per site: {_fmt(r_s_large.per_site)}")
-print(f"  vectorised  time: {_fmt(r_v_large.mean)}   per site: {_fmt(r_v_large.per_site)}")
+print(
+    f"  scalar      time: {_fmt(r_s_large.mean)}   per site: {_fmt(r_s_large.per_site)}"
+)
+print(
+    f"  vectorised  time: {_fmt(r_v_large.mean)}   per site: {_fmt(r_v_large.per_site)}"
+)
 print(f"  speedup:    {r_s_large.mean / r_v_large.mean:.1f}×")
 print()
 
@@ -100,15 +129,15 @@ print()
 # Projection to full Sokolov dataset scale.
 
 dot_sites = 441 * 1100
-s_per   = r_s_large.per_site
-v_per   = r_v_large.per_site
+s_per = r_s_large.per_site
+v_per = r_v_large.per_site
 
 print("Projections to real dataset  (based on 400×400 per-site time)")
 print("-" * 60)
 for label, sites in [
     ("dot region  step=1  (441×1100)", dot_sites),
-    ("dot region  step=5  (88×220)",   dot_sites // 25),
-    ("dot region  step=10 (44×110)",   dot_sites // 100),
+    ("dot region  step=5  (88×220)", dot_sites // 25),
+    ("dot region  step=10 (44×110)", dot_sites // 100),
 ]:
     print(f"  {label}")
     print(f"    scalar:      {_fmt(s_per * sites)}  ({sites:,} sites)")

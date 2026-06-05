@@ -69,7 +69,9 @@ def test_site_correlator_matches_spin_correlator():
     H = faraday_hamiltonian(
         zeeman_per_tesla * applied_field,
         qcc * V_ZZ,
-        biaxiality, spin, *euler,
+        biaxiality,
+        spin,
+        *euler,
     )
     expected = spin_correlator(t, H, "z")
     assert abs(result - expected) < 1e-10

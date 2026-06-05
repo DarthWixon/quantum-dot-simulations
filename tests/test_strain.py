@@ -25,10 +25,10 @@ from qdot.strain import (
     unstrained_positions,
 )
 
-
 # ---------------------------------------------------------------------------
 # Lattice generators
 # ---------------------------------------------------------------------------
+
 
 class TestLatticeGenerators:
     def test_gaas_lattice_shapes(self):
@@ -43,8 +43,12 @@ class TestLatticeGenerators:
     def test_gaas_lattice_alternates(self):
         """Every pair of adjacent atoms should be different species."""
         _, small = gaas_lattice(6, 6)
-        assert np.all(small[:-1, :] != small[1:, :]), "vertical neighbours not alternating"
-        assert np.all(small[:, :-1] != small[:, 1:]), "horizontal neighbours not alternating"
+        assert np.all(
+            small[:-1, :] != small[1:, :]
+        ), "vertical neighbours not alternating"
+        assert np.all(
+            small[:, :-1] != small[:, 1:]
+        ), "horizontal neighbours not alternating"
 
     def test_indium_centre_exactly_one_in(self):
         _, small = gaas_lattice_with_indium_centre(7, 7)
@@ -53,7 +57,7 @@ class TestLatticeGenerators:
     def test_indium_centre_at_centre(self):
         n = 7
         _, small = gaas_lattice_with_indium_centre(n, n)
-        (r, c) = np.argwhere(small == 2)[0]
+        r, c = np.argwhere(small == 2)[0]
         # must be within one site of the geometric centre
         assert abs(r - n // 2) <= 1
         assert abs(c - n // 2) <= 1
@@ -63,7 +67,7 @@ class TestLatticeGenerators:
         n = 7
         _, gaas = gaas_lattice(n, n)
         _, with_in = gaas_lattice_with_indium_centre(n, n)
-        (r, c) = np.argwhere(with_in == 2)[0]
+        r, c = np.argwhere(with_in == 2)[0]
         assert gaas[r, c] == 0, "In was placed on an As site"
 
     def test_block_in_positions_count(self):
@@ -81,6 +85,7 @@ class TestLatticeGenerators:
 # ---------------------------------------------------------------------------
 # Unstrained positions
 # ---------------------------------------------------------------------------
+
 
 class TestUnstrainedPositions:
     def test_shape(self):
@@ -101,6 +106,7 @@ class TestUnstrainedPositions:
 # ---------------------------------------------------------------------------
 # Strain tensor
 # ---------------------------------------------------------------------------
+
 
 class TestStrainTensor:
     def test_output_shape(self):
@@ -131,10 +137,13 @@ class TestStrainTensor:
 # Full simulation
 # ---------------------------------------------------------------------------
 
+
 class TestRunStrainSimulation:
     def test_return_shapes(self):
         n = 7
-        species, unstrained, strained, t, _, _ = run_strain_simulation(n, n, lattice_type=0)
+        species, unstrained, strained, t, _, _ = run_strain_simulation(
+            n, n, lattice_type=0
+        )
         assert species.shape == (n, n)
         assert unstrained.shape == (n, n, 2)
         assert strained.shape == (n, n, 2)
