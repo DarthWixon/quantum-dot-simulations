@@ -16,7 +16,7 @@ from qdot.io import (
     SOKOLOV_DOT_REGION,
 )
 from qdot.nmr import absorption_spectrum, varied_field_spectra
-from qdot.strain import run_strain_simulation, strain_tensor
+from qdot.strain import run_strain_simulation, strain_tensor, strain_tensor_vectorised
 from qdot.nff import dephasing_polarisation_curve, non_dephased_polarisation
 
 __all__ = [
@@ -48,6 +48,7 @@ __all__ = [
     # strain
     "run_strain_simulation",
     "strain_tensor",
+    "strain_tensor_vectorised",
     # nff
     "dephasing_polarisation_curve",
     "non_dephased_polarisation",

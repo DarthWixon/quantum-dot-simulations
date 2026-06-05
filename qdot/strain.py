@@ -247,6 +247,63 @@ def _positions_to_spring_lengths(
     return lengths
 
 
+def _positions_to_spring_lengths_vectorised(
+    coords: np.ndarray,
+    box_width: float,
+    box_height: float,
+    n_rows: int,
+    n_cols: int,
+) -> np.ndarray:
+    """
+    Vectorised equivalent of _positions_to_spring_lengths — no Python loops.
+
+    Builds padded node arrays for vertical and horizontal bond directions,
+    computes all bond lengths in two np.linalg.norm calls, then scatters
+    results into the flat output array using precomputed indices.
+    """
+    coords = np.reshape(coords, (n_rows, n_cols, 2))
+    col_idx = np.arange(n_cols)
+    row_idx = np.arange(n_rows)
+
+    # Padded vertical nodes: top wall, atoms, bottom wall → shape (n_rows+2, n_cols, 2)
+    top_wall = np.column_stack(
+        [(col_idx + 1) * box_width / (n_cols + 1), np.zeros(n_cols)]
+    )
+    bottom_wall = np.column_stack(
+        [(col_idx + 1) * box_width / (n_cols + 1), np.full(n_cols, box_height)]
+    )
+    v_nodes = np.concatenate([top_wall[None], coords, bottom_wall[None]], axis=0)
+    v_lengths = np.linalg.norm(
+        v_nodes[1:] - v_nodes[:-1], axis=-1
+    )  # (n_rows+1, n_cols)
+
+    # Padded horizontal nodes: left wall, atoms, right wall → shape (n_rows, n_cols+2, 2)
+    left_wall = np.column_stack(
+        [np.zeros(n_rows), (row_idx + 1) * box_height / (n_rows + 1)]
+    )
+    right_wall = np.column_stack(
+        [np.full(n_rows, box_width), (row_idx + 1) * box_height / (n_rows + 1)]
+    )
+    h_nodes = np.concatenate([left_wall[:, None], coords, right_wall[:, None]], axis=1)
+    h_lengths = np.linalg.norm(
+        h_nodes[:, 1:] - h_nodes[:, :-1], axis=-1
+    )  # (n_rows, n_cols+1)
+
+    lengths = np.empty(_n_springs(n_rows, n_cols))
+
+    r_v = np.arange(n_rows + 1)
+    c_v = np.arange(n_cols)
+    v_idx = 2 * (n_rows + 1) * c_v[None, :] + 2 * r_v[:, None]  # (n_rows+1, n_cols)
+    lengths[v_idx.ravel()] = v_lengths.ravel()
+
+    r_h = np.arange(n_rows)
+    c_h = np.arange(n_cols + 1)
+    h_idx = 2 * (n_cols + 1) * r_h[:, None] + 2 * c_h[None, :] + 1  # (n_rows, n_cols+1)
+    lengths[h_idx.ravel()] = h_lengths.ravel()
+
+    return lengths
+
+
 def _potential_energy(
     coords: np.ndarray,
     spring_k: np.ndarray,
@@ -257,6 +314,21 @@ def _potential_energy(
     n_cols: int,
 ) -> float:
     lengths = _positions_to_spring_lengths(
+        coords, box_width, box_height, n_rows, n_cols
+    )
+    return np.sum(spring_k * (lengths - natural_l) ** 2)
+
+
+def _potential_energy_vectorised(
+    coords: np.ndarray,
+    spring_k: np.ndarray,
+    natural_l: np.ndarray,
+    box_width: float,
+    box_height: float,
+    n_rows: int,
+    n_cols: int,
+) -> float:
+    lengths = _positions_to_spring_lengths_vectorised(
         coords, box_width, box_height, n_rows, n_cols
     )
     return np.sum(spring_k * (lengths - natural_l) ** 2)
@@ -321,6 +393,37 @@ def strain_tensor(
     return result
 
 
+def strain_tensor_vectorised(
+    strained_coords: np.ndarray, unstrained_coords: np.ndarray
+) -> np.ndarray:
+    """
+    Vectorised equivalent of strain_tensor — no Python loops.
+
+    Builds all pairwise displacement vectors at once via broadcasting, then
+    accumulates W and V with einsum before solving for the deformation gradient.
+
+    Args:
+        strained_coords (ndarray): Shape (n_rows, n_cols, 2).
+        unstrained_coords (ndarray): Shape (n_rows, n_cols, 2).
+
+    Returns:
+        ndarray: Shape (n_rows, n_cols, 2, 2). Symmetric strain tensor at each site.
+            Identical result to strain_tensor.
+    """
+    # du[r, c, a, b, :] = unstrained[r, c] - unstrained[a, b]
+    du = unstrained_coords[:, :, None, None, :] - unstrained_coords[None, None, :, :, :]
+    ds = strained_coords[:, :, None, None, :] - strained_coords[None, None, :, :, :]
+
+    # W[r,c,i,j] = sum_{a,b} ds[r,c,a,b,i] * du[r,c,a,b,j]
+    # V[r,c,i,j] = sum_{a,b} du[r,c,a,b,i] * du[r,c,a,b,j]
+    W = np.einsum("rcabi,rcabj->rcij", ds, du)
+    V = np.einsum("rcabi,rcabj->rcij", du, du)
+
+    F = W @ np.linalg.pinv(V)
+    grad_U = F - np.eye(2)
+    return 0.5 * (grad_U + grad_U.transpose(0, 1, 3, 2))
+
+
 # ---------------------------------------------------------------------------
 # Top-level simulation
 # ---------------------------------------------------------------------------
@@ -375,7 +478,7 @@ def run_strain_simulation(
 
     t0 = time.time()
     result = opt.minimize(
-        _potential_energy,
+        _potential_energy_vectorised,
         unstr.flatten(),
         args=(spring_k, natural_l, box_w, box_h, n_rows, n_cols),
     )
