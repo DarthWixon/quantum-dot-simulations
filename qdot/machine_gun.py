@@ -31,6 +31,7 @@ def state_constructor(n_photons: int) -> np.ndarray:
     return state
 
 
+# Unused — scaffolding for the incomplete density-matrix extension.
 def state_to_density_matrix(state: np.ndarray) -> np.ndarray:
     """Convert a state vector to a density matrix via outer product."""
     return np.outer(state, state)
@@ -102,6 +103,8 @@ def controlled_unitary(
     return first_term + second_term
 
 
+# Unused — returns Qobj-wrapped CNOTs intended for the density-matrix extension;
+# the state-vector path calls controlled_unitary directly.
 def cnot_array(n_photons: int) -> np.ndarray:
     """
     Build an array of CNOT operators, one per photon.
@@ -157,6 +160,7 @@ def operational_perfect_machine_gun(n_photons: int) -> np.ndarray:
     return operator @ initial
 
 
+# Unused — error-simulation variant; not called by the default state-vector path.
 def machine_gun_with_pauli_errors(
     n_photons: int, errors_array: np.ndarray
 ) -> np.ndarray:
