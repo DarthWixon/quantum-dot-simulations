@@ -11,9 +11,8 @@ The required properties are:
     S11 (float): The value of the Sxxxx component of the gradient elastic tensor.
     S44 (float): The value of the Syzyz component of the gradient elastic tensor.
 
-The species that were changed by Checkovich et al are: Gallium 69 and Arsenic 75. 
+The species that were changed by Checkovich et al are: Gallium 69 and Arsenic 75.
 """
-
 
 In_115 = {
     "short_name": "In_115",
