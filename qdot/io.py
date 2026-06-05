@@ -26,16 +26,18 @@ logger = logging.getLogger(__name__)
 SOKOLOV_DOT_REGION = [100, 1200, 439, 880]
 
 
-def load_sokolov_data(
+def load_strain_data(
     data_dir: pathlib.Path | str,
     region_bounds: list[int],
     step_size: int = 1,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Load strain tensor components from the Sokolov dataset.
+    Load strain tensor components from whitespace-delimited text files.
 
-    Data from Sokolov et al. DOI: 10.1103/PhysRevB.93.045301.
-    The source files are 1600×1600 arrays of strain values.
+    Expects three files in data_dir: full_epsilon_xx.txt, full_epsilon_xy.txt,
+    full_epsilon_yy.txt. Each is a 2D array of strain values. The xz and zz
+    components are sign-flipped on load to match the simulation coordinate
+    convention.
 
     Args:
         data_dir: Directory containing full_epsilon_*.txt files.
