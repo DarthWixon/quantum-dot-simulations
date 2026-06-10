@@ -11,3 +11,6 @@ real-data-outputs/
 __pycache__/
 *.pyc
 *.egg-info/
+
+# Generated experiment outputs (graphs and cached maps)
+new_data_outputs/
