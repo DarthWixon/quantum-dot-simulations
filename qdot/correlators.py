@@ -14,9 +14,8 @@ import multiprocessing
 import pathlib
 import numpy as np
 import qutip
-import scipy.constants as const
 
-from qdot.isotopes import species_dict
+from qdot.isotopes import species_dict, quadrupole_coupling
 from qdot.hamiltonians import faraday_hamiltonian
 from qdot.io import load_efg, SOKOLOV_DOT_REGION
 
@@ -138,9 +137,7 @@ def _load_site_params(
 
     species = species_dict[nuclear_species]
     spin = species["particle_spin"]
-    Q = species["quadrupole_moment"]
-    h, e = const.h, const.e
-    qcc = (3 * e * Q) / (2 * h * spin * (2 * spin - 1))
+    qcc = quadrupole_coupling(species)
 
     return {
         "n_sites": eta.size,
@@ -353,3 +350,26 @@ def run_linear_correlator_simulation(
         chunksize,
         archive_name,
     )
+
+
+def load_correlator_archive(path: pathlib.Path | str) -> dict:
+    """
+    Load a correlator archive written by run_log_correlator_simulation or
+    run_linear_correlator_simulation.
+
+    Args:
+        path: Full path to the .npz archive.
+
+    Returns:
+        dict with keys:
+            "timerange" (ndarray): Times in seconds.
+            "region_bounds" (ndarray): [left, right, top, bottom].
+            "data" (dict): Species name → correlator array, shape (3, n_times).
+    """
+    archive = np.load(path)
+    species_list = ["Ga69", "Ga71", "As75", "In115"]
+    return {
+        "timerange": archive["timerange"],
+        "region_bounds": archive["region_bounds"],
+        "data": {s: archive[f"{s}_data"] for s in species_list},
+    }

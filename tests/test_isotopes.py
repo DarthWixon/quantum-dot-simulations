@@ -43,3 +43,21 @@ def test_checkhovich_ga69_s11_is_negative():
 def test_zeeman_frequencies_positive():
     for key in ALL_SPECIES:
         assert species_dict[key]["zeeman_frequency_per_tesla"] > 0
+
+
+def test_quadrupole_coupling_matches_formula():
+    import scipy.constants as const
+    from qdot.isotopes import species_dict, quadrupole_coupling
+
+    species = species_dict["Ga69"]
+    spin = species["particle_spin"]
+    Q = species["quadrupole_moment"]
+    expected = (3 * const.e * Q) / (2 * const.h * spin * (2 * spin - 1))
+    assert quadrupole_coupling(species) == pytest.approx(expected)
+
+
+def test_quadrupole_coupling_positive_for_all_species():
+    from qdot.isotopes import species_dict, quadrupole_coupling
+
+    for species in species_dict.values():
+        assert quadrupole_coupling(species) > 0

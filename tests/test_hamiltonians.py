@@ -126,3 +126,61 @@ def test_transition_rate_on_resonance_exceeds_off_resonance():
         H_rf, states[0], states[1], energies[0], energies[1], gap * 1000
     )
     assert rate_on > rate_off
+
+
+# ---------------------------------------------------------------------------
+# Energy level sweeps
+# ---------------------------------------------------------------------------
+
+
+def test_energy_levels_vs_field_shape():
+    from qdot.hamiltonians import energy_levels_vs_field
+
+    fields = np.linspace(0, 2, 5)
+    levels = energy_levels_vs_field("Ga69", fields, 0.4, 3e20, (0.1, 0.2, 0.3))
+    assert levels.shape == (4, 5)  # spin 3/2 → 4 levels
+
+
+def test_energy_levels_vs_field_pure_zeeman_is_linear():
+    from qdot.hamiltonians import energy_levels_vs_field
+    from qdot.isotopes import species_dict
+
+    fields = np.linspace(0.5, 2.0, 4)
+    levels = energy_levels_vs_field("Ga69", fields, 0.0, 0.0, (0.0, 0.0, 0.0))
+
+    zeeman = species_dict["Ga69"]["zeeman_frequency_per_tesla"]
+    expected = np.outer([-1.5, -0.5, 0.5, 1.5], zeeman * fields)
+    np.testing.assert_allclose(levels, expected, rtol=1e-9)
+
+
+def test_energy_levels_vs_field_invalid_geometry_raises():
+    from qdot.hamiltonians import energy_levels_vs_field
+
+    with pytest.raises(ValueError, match="field_geometry"):
+        energy_levels_vs_field(
+            "Ga69", np.array([1.0]), 0.0, 0.0, (0, 0, 0), field_geometry="Diagonal"
+        )
+
+
+def test_energy_levels_vs_eta_shape_and_zero_field_degeneracy():
+    from qdot.hamiltonians import energy_levels_vs_eta
+
+    etas = np.linspace(0, 1, 6)
+    levels = energy_levels_vs_eta("In115", etas, applied_field=0.0)
+    assert levels.shape == (10, 6)  # spin 9/2 → 10 levels
+
+    # At B = 0 and eta = 0 the quadrupolar Hamiltonian only depends on I_z²,
+    # so levels come in ±m pairs.
+    at_eta_zero = np.sort(levels[:, 0])
+    np.testing.assert_allclose(at_eta_zero[0::2], at_eta_zero[1::2], rtol=1e-9)
+
+
+def test_energy_levels_vs_field_faraday_voigt_differ():
+    from qdot.hamiltonians import energy_levels_vs_field
+
+    fields = np.linspace(0.1, 1.0, 3)
+    faraday = energy_levels_vs_field(
+        "Ga69", fields, 0.5, 3e20, (0.3, 0.6, 0.9), "Faraday"
+    )
+    voigt = energy_levels_vs_field("Ga69", fields, 0.5, 3e20, (0.3, 0.6, 0.9), "Voigt")
+    assert not np.allclose(faraday, voigt)

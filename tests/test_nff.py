@@ -134,3 +134,41 @@ def test_non_dephased_polarisation_matches_curve_at_no_dephasing():
     result = non_dephased_polarisation(q0, phase)
     _, z_list = dephasing_polarisation_curve(q0, phase, n_gammas=1)
     assert abs(result - z_list[0]) < 1e-10
+
+
+# ---------------------------------------------------------------------------
+# X/Y polarisation and the scattering-probability relation
+# ---------------------------------------------------------------------------
+
+
+def test_x_polarisation_of_plus_state_is_one():
+    from qdot.nff import x_polarisation
+
+    plus_dm = qutip.Qobj(np.array([[1, 1], [1, 1]]) / 2)
+    assert np.real(x_polarisation(plus_dm)) == pytest.approx(1.0)
+
+
+def test_y_polarisation_of_plus_state_is_zero():
+    from qdot.nff import y_polarisation
+
+    plus_dm = qutip.Qobj(np.array([[1, 1], [1, 1]]) / 2)
+    assert abs(y_polarisation(plus_dm)) == pytest.approx(0.0, abs=1e-12)
+
+
+def test_polarisations_of_maximally_mixed_state_are_zero():
+    from qdot.nff import x_polarisation, y_polarisation
+
+    mixed = qutip.Qobj(np.eye(2) / 2)
+    assert abs(x_polarisation(mixed)) == pytest.approx(0.0, abs=1e-12)
+    assert abs(y_polarisation(mixed)) == pytest.approx(0.0, abs=1e-12)
+
+
+def test_dephasing_from_scattering_limits():
+    from qdot.nff import dephasing_from_scattering
+
+    assert dephasing_from_scattering(0.0) == pytest.approx(1.0)
+    assert dephasing_from_scattering(1.0) == pytest.approx(0.5)
+    # Monotonic decrease between the limits.
+    probs = np.linspace(0, 1, 11)
+    values = np.array([dephasing_from_scattering(p) for p in probs])
+    assert np.all(np.diff(values) < 0)

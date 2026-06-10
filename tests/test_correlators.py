@@ -119,3 +119,32 @@ def test_run_correlator_series_values_are_finite(efg_dir):
 def test_run_correlator_series_invalid_species_raises(efg_dir):
     with pytest.raises(ValueError, match="nuclear_species"):
         run_correlator_series(efg_dir, np.array([0.0]), 1.0, "Xx99", _BOUNDS)
+
+
+# ---------------------------------------------------------------------------
+# load_correlator_archive
+# ---------------------------------------------------------------------------
+
+
+def test_load_correlator_archive_round_trip(tmp_path):
+    from qdot.correlators import load_correlator_archive
+
+    rng = np.random.default_rng(0)
+    timerange = np.logspace(-6, -3, 8)
+    bounds = [0, 2, 0, 2]
+    species_data = {
+        s: rng.random((3, len(timerange))) for s in ("Ga69", "Ga71", "As75", "In115")
+    }
+    path = tmp_path / "correlator_archive.npz"
+    np.savez(
+        path,
+        timerange=timerange,
+        region_bounds=bounds,
+        **{f"{s}_data": d for s, d in species_data.items()},
+    )
+
+    result = load_correlator_archive(path)
+    np.testing.assert_allclose(result["timerange"], timerange)
+    np.testing.assert_array_equal(result["region_bounds"], bounds)
+    for s, d in species_data.items():
+        np.testing.assert_allclose(result["data"][s], d)

@@ -96,3 +96,40 @@ def non_dephased_polarisation(q0: float, phase: float) -> float:
     pulse_op = pulse_kraus_operator(q0, phase)
     final_dm = qutip.superoperator.vector_to_operator(pulse_op * initial_vec)
     return float(np.real_if_close(z_polarisation(final_dm)))
+
+
+def x_polarisation(density_matrix: qutip.Qobj) -> complex:
+    """
+    Expectation of the Pauli x operator, Tr(σx·ρ).
+
+    Note: unlike z_polarisation, no basis rotation is applied — this is the
+    plain σx expectation of the density matrix as given (the convention of
+    the original research code; see human-todo.).
+    """
+    return (qutip.sigmax() * density_matrix).tr()
+
+
+def y_polarisation(density_matrix: qutip.Qobj) -> complex:
+    """
+    Expectation of the Pauli y operator, Tr(σy·ρ).
+
+    See the basis-convention note on x_polarisation.
+    """
+    return (qutip.sigmay() * density_matrix).tr()
+
+
+def dephasing_from_scattering(scattering_probability: float) -> float:
+    """
+    Phase damping parameter produced by photon scattering.
+
+    γ = (1 + √(1 − p)) / 2, mapping a photon scattering probability p in
+    [0, 1] onto the dephasing parameter range [0.5, 1] used by
+    dephasing_kraus_operator (1 = no dephasing, 0.5 = maximal).
+
+    Args:
+        scattering_probability (float): Photon scattering probability in [0, 1].
+
+    Returns:
+        float: Dephasing parameter γ in [0.5, 1].
+    """
+    return (1 + np.sqrt(1 - scattering_probability)) / 2

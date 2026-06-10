@@ -16,6 +16,9 @@ from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from scipy.optimize import curve_fit
+from scipy.stats import maxwell, gamma as gamma_dist
+
 from qdot.isotopes import species_dict
 
 # ---------------------------------------------------------------------------
@@ -375,3 +378,796 @@ def _save_or_show(fig: plt.Figure, save_path: pathlib.Path | str | None) -> None
     else:
         plt.show()
     plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# NMR field-frequency maps
+# ---------------------------------------------------------------------------
+
+
+def _nmr_extent(applied_field_list, rf_freq_list) -> list[float]:
+    """Image extent [f_min(MHz), f_max(MHz), B_min(T), B_max(T)] for NMR maps."""
+    return [
+        rf_freq_list[0] / 1e6,
+        rf_freq_list[-1] / 1e6,
+        applied_field_list[0],
+        applied_field_list[-1],
+    ]
+
+
+def plot_nmr_map(
+    absorption_data: np.ndarray,
+    applied_field_list: np.ndarray,
+    rf_freq_list: np.ndarray,
+    log_scale: bool = True,
+    title: str | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Heatmap of a 2D NMR absorption map (applied field × RF frequency).
+
+    Args:
+        absorption_data (ndarray): Map from qdot.nmr.absorption_map,
+            shape (n_fields, n_freqs).
+        applied_field_list (ndarray): Applied fields in Tesla.
+        rf_freq_list (ndarray): RF frequencies in Hz.
+        log_scale (bool): Plot log(absorption). Default True.
+        title (str): Optional figure title.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    data = np.log(absorption_data) if log_scale else absorption_data
+
+    fig, ax = plt.subplots()
+    ax.imshow(
+        data,
+        origin="lower",
+        cmap=cm.GnBu,
+        aspect="auto",
+        extent=_nmr_extent(applied_field_list, rf_freq_list),
+        interpolation="none",
+    )
+    ax.set_xlabel("RF Frequency (MHz)")
+    ax.set_ylabel("Applied B Field (T)")
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+def plot_nmr_map_pair(
+    absorption_data_a: np.ndarray,
+    absorption_data_b: np.ndarray,
+    labels: tuple[str, str],
+    applied_field_list: np.ndarray,
+    rf_freq_list: np.ndarray,
+    log_scale: bool = True,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Side-by-side comparison of two NMR maps (e.g. Faraday vs Voigt, or
+    Checkhovich vs Sundfors parameter sets).
+
+    Args:
+        absorption_data_a, absorption_data_b (ndarray): Maps, shape (n_fields, n_freqs).
+        labels (tuple): Panel titles, e.g. ("Faraday", "Voigt").
+        applied_field_list (ndarray): Applied fields in Tesla.
+        rf_freq_list (ndarray): RF frequencies in Hz.
+        log_scale (bool): Plot log(absorption). Default True.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    extent = _nmr_extent(applied_field_list, rf_freq_list)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+
+    for ax, data, label, letter in zip(
+        axes, (absorption_data_a, absorption_data_b), labels, "ab"
+    ):
+        plot_data = np.log(data) if log_scale else data
+        ax.imshow(
+            plot_data,
+            origin="lower",
+            cmap=cm.GnBu,
+            aspect="auto",
+            extent=extent,
+            interpolation="none",
+        )
+        ax.set_xlabel("RF Frequency (MHz)")
+        ax.set_title(label)
+        ax.text(0.02, 0.95, letter, transform=ax.transAxes, fontsize=14)
+
+    axes[0].set_ylabel("Applied B Field (T)")
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+def plot_nmr_map_difference(
+    absorption_data_a: np.ndarray,
+    absorption_data_b: np.ndarray,
+    applied_field_list: np.ndarray,
+    rf_freq_list: np.ndarray,
+    log_scale: bool = True,
+    title: str | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Difference map of two NMR maps on a symmetric diverging colour scale.
+
+    Plots (a − b), or log(a) − log(b) when log_scale is True.
+
+    Args:
+        absorption_data_a, absorption_data_b (ndarray): Maps, shape (n_fields, n_freqs).
+        applied_field_list (ndarray): Applied fields in Tesla.
+        rf_freq_list (ndarray): RF frequencies in Hz.
+        log_scale (bool): Difference of logs. Default True.
+        title (str): Optional figure title.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    if log_scale:
+        difference = np.log(absorption_data_a) - np.log(absorption_data_b)
+    else:
+        difference = absorption_data_a - absorption_data_b
+    scale = np.max(np.abs(difference))
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(
+        difference,
+        origin="lower",
+        cmap=cm.seismic,
+        vmin=-scale,
+        vmax=scale,
+        aspect="auto",
+        extent=_nmr_extent(applied_field_list, rf_freq_list),
+        interpolation="none",
+    )
+    plt.colorbar(im, ax=ax)
+    ax.set_xlabel("RF Frequency (MHz)")
+    ax.set_ylabel("Applied B Field (T)")
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+def plot_nmr_map_layered(
+    species_maps: dict[str, np.ndarray],
+    applied_field_list: np.ndarray,
+    rf_freq_list: np.ndarray,
+    title: str | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Per-species transparent layers of an experimental NMR simulation.
+
+    Each species' log map is drawn as its own colour layer with decreasing
+    alpha (Greys, Blues, Reds, Greens in dict order), matching the original
+    experimental-simulation figure.
+
+    Args:
+        species_maps (dict): Species name → absorption map, e.g. from
+            qdot.nmr.experimental_nmr_simulation.
+        applied_field_list (ndarray): Applied fields in Tesla.
+        rf_freq_list (ndarray): RF frequencies in Hz.
+        title (str): Optional figure title.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    cmaps = [cm.Greys, cm.Blues, cm.Reds, cm.Greens]
+    alphas = [1.0, 0.5, 0.25, 0.25]
+    extent = _nmr_extent(applied_field_list, rf_freq_list)
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    for (species, data), cmap, alpha in zip(species_maps.items(), cmaps, alphas):
+        ax.imshow(
+            np.log(data),
+            origin="lower",
+            cmap=cmap,
+            alpha=alpha,
+            aspect="auto",
+            extent=extent,
+            interpolation="none",
+        )
+    ax.set_xlabel("RF Frequency (MHz)")
+    ax.set_ylabel("Applied B Field (T)")
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# Energy level diagrams
+# ---------------------------------------------------------------------------
+
+
+def plot_energy_levels(
+    sweep_values: np.ndarray,
+    level_data: np.ndarray,
+    x_label: str,
+    title: str | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Energy level (anti-crossing) diagram over a swept parameter.
+
+    Args:
+        sweep_values (ndarray): Swept variable (e.g. B in Tesla, or η).
+        level_data (ndarray): Eigenenergies in Hz, shape (n_levels, n_sweep),
+            e.g. from qdot.hamiltonians.energy_levels_vs_field.
+        x_label (str): Label of the swept variable.
+        title (str): Optional figure title.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    fig, ax = plt.subplots()
+    for level in level_data:
+        ax.plot(sweep_values, level / 1e6, color="black", linewidth=0.8)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel("Energy (MHz)")
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+def plot_energy_levels_comparison(
+    sweep_values: np.ndarray,
+    faraday_levels: np.ndarray,
+    voigt_levels: np.ndarray,
+    x_label: str = "Applied B Field (T)",
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Two-panel Faraday | Voigt energy level diagram with shared y-limits.
+
+    Args:
+        sweep_values (ndarray): Swept variable.
+        faraday_levels, voigt_levels (ndarray): Eigenenergies in Hz,
+            shape (n_levels, n_sweep). Overlaying several sites is possible by
+            stacking their level arrays along axis 0.
+        x_label (str): Label of the swept variable.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+
+    for ax, levels, geometry, letter in zip(
+        axes, (faraday_levels, voigt_levels), ("Faraday", "Voigt"), "ab"
+    ):
+        for level in levels:
+            ax.plot(sweep_values, level / 1e6, color="black", linewidth=0.5)
+        ax.set_xlabel(x_label)
+        ax.set_title(f"{geometry} Orientation")
+        ax.text(0.02, 0.95, letter, transform=ax.transAxes, fontsize=14)
+
+    axes[0].set_ylabel("Energy (MHz)")
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# Quadrupolar site maps and EFG direction quivers
+# ---------------------------------------------------------------------------
+
+
+def plot_site_map(
+    site_data: np.ndarray,
+    colorbar_label: str = "",
+    cmap=cm.GnBu,
+    vmin: float | None = None,
+    vmax: float | None = None,
+    title: str | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Generic per-site heatmap with a horizontal colorbar (axes hidden).
+
+    Args:
+        site_data (ndarray): Per-site values, shape (n, m).
+        colorbar_label (str): Label under the colorbar.
+        cmap: Matplotlib colormap. Default GnBu.
+        vmin, vmax (float): Optional fixed colour scale.
+        title (str): Optional figure title.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    fig, ax = plt.subplots()
+    im = ax.imshow(site_data, cmap=cmap, vmin=vmin, vmax=vmax)
+    ax.axis("off")
+    cbar = plt.colorbar(im, ax=ax, orientation="horizontal")
+    if colorbar_label:
+        cbar.ax.set_xlabel(colorbar_label, fontsize=14)
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+def plot_biaxiality(
+    eta: np.ndarray,
+    title: str | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """Heatmap of biaxiality η on the standard fixed 0-1 scale."""
+    return plot_site_map(
+        eta,
+        colorbar_label=r"$\eta$",
+        vmin=0.0,
+        vmax=1.0,
+        title=title,
+        save_path=save_path,
+    )
+
+
+def plot_quadrupole_frequency(
+    frequency: np.ndarray,
+    title: str | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Heatmap of the quadrupolar frequency across the dot.
+
+    Args:
+        frequency (ndarray): Quadrupolar frequency in Hz, e.g. from
+            qdot.efg.quadrupole_frequency.
+        title (str): Optional figure title.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    return plot_site_map(
+        frequency / 1e6,
+        colorbar_label="Quadrupole Frequency (MHz)",
+        title=title,
+        save_path=save_path,
+    )
+
+
+def plot_efg_directions(
+    euler_angles: np.ndarray,
+    background: np.ndarray,
+    background_label: str = "",
+    arrow_lengths: np.ndarray | None = None,
+    spacing: int = 20,
+    double_headed: bool = True,
+    background_vmin: float | None = None,
+    background_vmax: float | None = None,
+    title: str | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Quiver map of the EFG principal-axis direction over a background heatmap.
+
+    Arrow angles come from the Euler γ angle at each site; arrows are drawn
+    every `spacing` sites. Pass V_ZZ as arrow_lengths to scale arrows by the
+    interaction size, or leave None for unit arrows. Backgrounds used in the
+    original figures: biaxiality η, In concentration, quadrupole frequency.
+
+    Args:
+        euler_angles (ndarray): Euler angles per site, shape (n, m, 3).
+            (Reshape the (n·m, 3) array from load_efg before passing.)
+        background (ndarray): Background values, shape (n, m).
+        background_label (str): Colorbar label.
+        arrow_lengths (ndarray): Optional arrow length per site, shape (n, m).
+        spacing (int): Arrow subsampling interval in sites.
+        double_headed (bool): Draw arrowheads at both ends (the EFG axis has
+            no sign). Default True.
+        background_vmin, background_vmax (float): Optional fixed colour scale.
+        title (str): Optional figure title.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    n, m = background.shape
+    X, Y = np.meshgrid(np.arange(m), np.arange(n))
+    angles_deg = euler_angles[:, :, 2] * 180 / np.pi
+    lengths = arrow_lengths if arrow_lengths is not None else np.ones((n, m))
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+    s = spacing
+    quiver_kwargs = dict(minshaft=5, pivot="middle", color="black")
+    ax.quiver(
+        X[::s, ::s],
+        Y[::s, ::s],
+        lengths[::s, ::s],
+        lengths[::s, ::s],
+        angles=angles_deg[::s, ::s],
+        **quiver_kwargs,
+    )
+    if double_headed:
+        ax.quiver(
+            X[::s, ::s],
+            Y[::s, ::s],
+            lengths[::s, ::s],
+            lengths[::s, ::s],
+            angles=angles_deg[::s, ::s] + 180,
+            **quiver_kwargs,
+        )
+
+    im = ax.imshow(background, cmap=cm.GnBu, vmin=background_vmin, vmax=background_vmax)
+    ax.axis("off")
+    cbar = plt.colorbar(im, ax=ax, orientation="horizontal")
+    if background_label:
+        cbar.ax.set_xlabel(background_label, fontsize=14)
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# Quadrupolar frequency histograms
+# ---------------------------------------------------------------------------
+
+
+def _gauss(x, A, mu, sigma):
+    return A * np.exp(-((x - mu) ** 2) / (2 * sigma**2))
+
+
+def _fit_histogram(values_mhz, bin_centres, hist_vals, fit):
+    """Fit a named distribution to histogram data; return (curve, annotation)."""
+    if fit == "gauss":
+        coeffs, _ = curve_fit(_gauss, bin_centres, hist_vals, p0=[1.0, 0.0, 0.2])
+        fitted = _gauss(bin_centres, *coeffs)
+        ss_res = np.sum((hist_vals - fitted) ** 2)
+        ss_tot = np.sum((hist_vals - np.mean(hist_vals)) ** 2)
+        r2 = 1 - ss_res / ss_tot
+        text = (
+            rf"$\mu$ = {coeffs[1]:.2f}, $\sigma$ = {abs(coeffs[2]):.2f}, "
+            rf"$R^2$ = {r2:.2f}"
+        )
+    elif fit == "maxwell":
+        params = maxwell.fit(values_mhz)
+        fitted = maxwell.pdf(bin_centres, *params)
+        text = f"Maxwell: loc = {params[0]:.2f}, scale = {params[1]:.2f}"
+    elif fit == "gamma":
+        params = gamma_dist.fit(values_mhz, floc=0)
+        fitted = gamma_dist.pdf(bin_centres, *params)
+        text = f"Gamma: a = {params[0]:.2f}, scale = {params[2]:.2f}"
+    else:
+        raise ValueError(
+            f"fit must be 'gauss', 'maxwell', 'gamma' or None, got {fit!r}"
+        )
+    return fitted, text
+
+
+def plot_frequency_histogram(
+    frequencies: np.ndarray,
+    fit: str | None = None,
+    label: str | None = None,
+    title: str | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Histogram of per-site quadrupolar frequencies with an optional fitted pdf.
+
+    The Maxwell and gamma fits follow the original analysis and act on the
+    magnitude of the frequencies; the Gaussian fit uses the signed values.
+    Which distributions are physically meaningful is a physics question
+    recorded in human-todo.
+
+    Args:
+        frequencies (ndarray): Per-site frequencies in Hz, e.g.
+            qdot.efg.quadrupole_frequency of a V_ZZ array.
+        fit (str): "gauss", "maxwell", "gamma", or None for no fit.
+        label (str): Optional legend label for the histogram.
+        title (str): Optional figure title.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    values_mhz = np.asarray(frequencies).flatten() / 1e6
+    if fit in ("maxwell", "gamma"):
+        values_mhz = np.abs(values_mhz)
+
+    fig, ax = plt.subplots()
+    hist_vals, bin_edges, _ = ax.hist(
+        values_mhz, bins="auto", density=True, histtype="step", label=label
+    )
+    bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    if fit is not None:
+        fitted, text = _fit_histogram(values_mhz, bin_centres, hist_vals, fit)
+        ax.plot(bin_centres, fitted, linestyle="dashed")
+        ax.text(
+            0.95,
+            0.95,
+            text,
+            transform=ax.transAxes,
+            ha="right",
+            va="top",
+            fontsize=9,
+            bbox=dict(boxstyle="round", facecolor="white", alpha=0.7),
+        )
+
+    ax.set_xlabel("Quadrupole Frequency (MHz)")
+    ax.set_ylabel("Probability Density")
+    if label:
+        ax.legend()
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+def plot_frequency_histograms(
+    frequency_sets: dict[str, np.ndarray],
+    title: str | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Overlaid step histograms of several frequency sets (species or regions).
+
+    Args:
+        frequency_sets (dict): Legend label → per-site frequencies in Hz.
+        title (str): Optional figure title.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    fig, ax = plt.subplots()
+    for label, frequencies in frequency_sets.items():
+        ax.hist(
+            np.asarray(frequencies).flatten() / 1e6,
+            bins="auto",
+            density=True,
+            histtype="step",
+            label=label,
+        )
+    ax.set_xlabel("Quadrupole Frequency (MHz)")
+    ax.set_ylabel("Probability Density")
+    ax.legend()
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+def plot_frequency_histograms_grid(
+    frequency_sets: dict[str, np.ndarray],
+    fit: str | None = "gamma",
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    2×2 grid of fitted frequency histograms, one panel per species.
+
+    Args:
+        frequency_sets (dict): Panel title → per-site frequencies in Hz
+            (up to four entries).
+        fit (str): "gauss", "maxwell", "gamma", or None. Default "gamma".
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+
+    for ax, (label, frequencies) in zip(axes.flatten(), frequency_sets.items()):
+        values_mhz = np.asarray(frequencies).flatten() / 1e6
+        if fit in ("maxwell", "gamma"):
+            values_mhz = np.abs(values_mhz)
+        hist_vals, bin_edges, _ = ax.hist(
+            values_mhz, bins="auto", density=True, histtype="step"
+        )
+        bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2
+        if fit is not None:
+            fitted, text = _fit_histogram(values_mhz, bin_centres, hist_vals, fit)
+            ax.plot(bin_centres, fitted, linestyle="dashed")
+            ax.text(
+                0.95,
+                0.95,
+                text,
+                transform=ax.transAxes,
+                ha="right",
+                va="top",
+                fontsize=8,
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.7),
+            )
+        ax.set_title(label)
+
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# Measured (Sokolov) strain maps
+# ---------------------------------------------------------------------------
+
+
+def plot_measured_strain(
+    xx_array: np.ndarray,
+    xz_array: np.ndarray,
+    zz_array: np.ndarray,
+    layout: str = "horizontal",
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Three-panel map of measured strain components (the Sokolov paper figure).
+
+    "horizontal" reproduces the paper-recreation layout: panels ordered
+    ε_xx, ε_zz, ε_xz on a fixed ±0.02 scale. "vertical" stacks the panels
+    with a shared data-driven RdBu scale.
+
+    Args:
+        xx_array, xz_array, zz_array (ndarray): Strain components from
+            qdot.io.load_strain_data, shape (n, m).
+        layout (str): "horizontal" or "vertical".
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    panels = [
+        (xx_array, r"$\epsilon_{xx}$"),
+        (zz_array, r"$\epsilon_{zz}$"),
+        (xz_array, r"$\epsilon_{xz}$"),
+    ]
+
+    if layout == "horizontal":
+        fig, axes = plt.subplots(1, 3, figsize=(9, 3), sharey=True)
+        for ax, (data, label) in zip(axes, panels):
+            im = ax.imshow(data, vmin=-0.02, vmax=0.02)
+            ax.axis("off")
+            ax.text(20, 150, label, fontsize=16)
+        cbar_ax = fig.add_axes([0.1, 0.1, 0.5, 0.05])
+        plt.colorbar(im, cax=cbar_ax, orientation="horizontal")
+    elif layout == "vertical":
+        fig, axes = plt.subplots(3, 1, figsize=(6, 9))
+        all_data = np.concatenate([d.ravel() for d, _ in panels])
+        normalizer = Normalize(all_data.min(), all_data.max())
+        for ax, (data, label) in zip(axes, panels):
+            ax.imshow(data, cmap=cm.RdBu, norm=normalizer)
+            ax.axis("off")
+            ax.text(20, 150, label, fontsize=16)
+        plt.colorbar(
+            cm.ScalarMappable(norm=normalizer, cmap=cm.RdBu),
+            ax=axes.ravel().tolist(),
+            shrink=0.95,
+            orientation="vertical",
+        )
+    else:
+        raise ValueError(f"layout must be 'horizontal' or 'vertical', got {layout!r}")
+
+    _save_or_show(fig, save_path)
+    return fig
+
+
+def plot_strain_row_cut(
+    xx_array: np.ndarray,
+    xz_array: np.ndarray,
+    zz_array: np.ndarray,
+    row: int,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Line cut of all three strain components along one pixel row.
+
+    Args:
+        xx_array, xz_array, zz_array (ndarray): Strain components, shape (n, m).
+        row (int): Row index of the cut.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    fig, ax = plt.subplots()
+    for data, label in [
+        (xx_array, r"$\epsilon_{xx}$"),
+        (xz_array, r"$\epsilon_{xz}$"),
+        (zz_array, r"$\epsilon_{zz}$"),
+    ]:
+        ax.plot(data[row], label=label)
+    ax.set_xlabel("Column Index")
+    ax.set_ylabel("Strain")
+    ax.set_title(f"Strain Along Row {row}")
+    ax.legend()
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# NFF and machine gun curves
+# ---------------------------------------------------------------------------
+
+
+def plot_polarisation_curve(
+    dephasing_list: np.ndarray,
+    z_polarisations: np.ndarray,
+    reference: float | None = None,
+    title: str | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Z polarisation against dephasing strength, with the x-axis inverted so
+    dephasing increases left to right (1 = none, 0.5 = maximal).
+
+    Args:
+        dephasing_list (ndarray): Dephasing values, e.g. from
+            qdot.nff.dephasing_polarisation_curve.
+        z_polarisations (ndarray): Z polarisation at each value.
+        reference (float): Optional undephased reference, drawn as a dotted
+            horizontal line (qdot.nff.non_dephased_polarisation).
+        title (str): Optional figure title.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    fig, ax = plt.subplots()
+    ax.plot(dephasing_list, np.real(z_polarisations))
+    if reference is not None:
+        ax.axhline(reference, linestyle="dotted", color="grey")
+    ax.invert_xaxis()
+    ax.set_xlabel(r"Dephasing Parameter $\gamma$")
+    ax.set_ylabel("Z Polarisation")
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig
+
+
+def plot_fidelity_curves(
+    error_strengths: np.ndarray,
+    fidelity_curves: dict[str, np.ndarray],
+    x_label: str = "Error Strength",
+    y_label: str = "Fidelity",
+    title: str | None = None,
+    save_path: pathlib.Path | str | None = None,
+) -> plt.Figure:
+    """
+    Machine gun fidelity (or trace distance) against error strength.
+
+    Args:
+        error_strengths (ndarray): Channel strengths swept.
+        fidelity_curves (dict): Legend label → metric values, e.g. one entry
+            per photon count from qdot.machine_gun.fidelity_vs_error.
+        x_label, y_label (str): Axis labels.
+        title (str): Optional figure title.
+        save_path: File path to save. If None, display instead.
+
+    Returns:
+        Figure
+    """
+    fig, ax = plt.subplots()
+    for label, curve in fidelity_curves.items():
+        ax.plot(error_strengths, curve, label=label)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.legend()
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    _save_or_show(fig, save_path)
+    return fig

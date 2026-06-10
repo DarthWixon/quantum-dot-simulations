@@ -6,9 +6,46 @@ the gradient-elastic tensor components S11 and S44 for each nuclear species.
 """
 
 import numpy as np
-from qdot.isotopes import species_dict, old_species_dict
+from qdot.isotopes import species_dict, old_species_dict, quadrupole_coupling
 
 _VALID_SPECIES = frozenset(species_dict)
+
+
+def quadrupole_frequency(nuclear_species: str, V_ZZ: np.ndarray) -> np.ndarray:
+    """
+    Quadrupolar frequency K·V_ZZ at each site.
+
+    Args:
+        nuclear_species (str): One of "Ga69", "Ga71", "As75", "In115".
+        V_ZZ (ndarray or float): Principal EFG component(s) in V·m⁻².
+
+    Returns:
+        ndarray or float: Quadrupolar frequency in Hz, same shape as V_ZZ.
+    """
+    if nuclear_species not in _VALID_SPECIES:
+        raise ValueError(
+            f"nuclear_species must be one of {sorted(_VALID_SPECIES)}, got {nuclear_species!r}"
+        )
+    return quadrupole_coupling(species_dict[nuclear_species]) * V_ZZ
+
+
+def equivalent_b_field(nuclear_species: str, V_ZZ: np.ndarray) -> np.ndarray:
+    """
+    Magnetic field giving the same level splitting as the quadrupolar interaction.
+
+    Computed as the quadrupolar frequency divided by the species' Zeeman
+    frequency per Tesla; shows the size of the quadrupolar interaction each
+    nucleus experiences in field units.
+
+    Args:
+        nuclear_species (str): One of "Ga69", "Ga71", "As75", "In115".
+        V_ZZ (ndarray or float): Principal EFG component(s) in V·m⁻².
+
+    Returns:
+        ndarray or float: Equivalent magnetic field in Tesla, same shape as V_ZZ.
+    """
+    freq = quadrupole_frequency(nuclear_species, V_ZZ)
+    return freq / species_dict[nuclear_species]["zeeman_frequency_per_tesla"]
 
 
 def euler_angles_from_rot_mat(rot_mat: np.ndarray) -> tuple[float, float, float]:

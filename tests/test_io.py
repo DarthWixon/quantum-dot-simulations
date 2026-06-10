@@ -160,3 +160,201 @@ class TestLoadEfg:
         save_efg(tmp_path, "As75", BOUNDS, 1, *_make_efg_arrays())
         eta, *_ = load_efg(str(tmp_path), "As75", BOUNDS, 1)
         assert eta.shape == SHAPE
+
+
+# ---------------------------------------------------------------------------
+# Region catalogue and rectangle conversion
+# ---------------------------------------------------------------------------
+
+
+def test_sokolov_regions_contains_dot_region():
+    from qdot.io import SOKOLOV_REGIONS, SOKOLOV_DOT_REGION
+
+    assert SOKOLOV_REGIONS["entire_dot"] == SOKOLOV_DOT_REGION
+    for bounds in SOKOLOV_REGIONS.values():
+        left, right, top, bottom = bounds
+        assert left < right and top < bottom
+
+
+def test_region_from_rectangle():
+    from qdot.io import region_from_rectangle
+
+    result = region_from_rectangle([100, 1200, 200, 1000], [50, 30, 200, 100])
+    assert result == [150, 350, 230, 330]
+
+
+# ---------------------------------------------------------------------------
+# Mirrored datasets
+# ---------------------------------------------------------------------------
+
+
+class TestMirrorArray:
+    def test_left_right_keeps_left_half(self):
+        from qdot.io import mirror_array
+
+        data = np.arange(12.0).reshape(3, 4)
+        result = mirror_array(data, "left_right")
+        np.testing.assert_array_equal(result[:, :2], data[:, :2])
+        np.testing.assert_array_equal(result, np.fliplr(result))
+
+    def test_right_left_keeps_right_half(self):
+        from qdot.io import mirror_array
+
+        data = np.arange(12.0).reshape(3, 4)
+        result = mirror_array(data, "right_left")
+        np.testing.assert_array_equal(result[:, 2:], data[:, 2:])
+        np.testing.assert_array_equal(result, np.fliplr(result))
+
+    def test_odd_columns_drop_centre(self):
+        from qdot.io import mirror_array
+
+        data = np.arange(15.0).reshape(3, 5)
+        assert mirror_array(data, "left_right").shape == (3, 4)
+
+    def test_invalid_direction_raises(self):
+        from qdot.io import mirror_array
+
+        with pytest.raises(ValueError, match="direction"):
+            mirror_array(np.zeros((2, 2)), "top_bottom")
+
+
+class TestMirroredDatasets:
+    def test_strain_round_trip(self, strain_dir):
+        from qdot.io import (
+            create_mirrored_strain_data,
+            load_mirrored_data,
+            load_strain_data,
+            mirror_array,
+        )
+
+        d, *_ = strain_dir
+        bounds = [0, 8, 0, 6]
+        create_mirrored_strain_data(d, bounds, "left_right")
+
+        xx_m, xz_m, zz_m = load_mirrored_data(d, bounds, mirror_type="left_right")
+        xx, xz, zz = load_strain_data(d, bounds)
+        np.testing.assert_allclose(xx_m, mirror_array(xx, "left_right"))
+        np.testing.assert_allclose(xz_m, mirror_array(xz, "left_right"))
+        np.testing.assert_allclose(zz_m, mirror_array(zz, "left_right"))
+
+    def test_strain_skips_existing(self, strain_dir):
+        from qdot.io import create_mirrored_strain_data, load_mirrored_data
+
+        d, *_ = strain_dir
+        bounds = [0, 8, 0, 6]
+        create_mirrored_strain_data(d, bounds)
+        first, *_ = load_mirrored_data(d, bounds)
+
+        # Overwrite the source files; without overwrite=True the archive
+        # must stay unchanged.
+        rng = np.random.default_rng(99)
+        _write_strain_files(
+            d,
+            rng.random((10, 10)),
+            rng.random((10, 10)),
+            rng.random((10, 10)),
+        )
+        create_mirrored_strain_data(d, bounds)
+        unchanged, *_ = load_mirrored_data(d, bounds)
+        np.testing.assert_array_equal(first, unchanged)
+
+        create_mirrored_strain_data(d, bounds, overwrite=True)
+        replaced, *_ = load_mirrored_data(d, bounds)
+        assert not np.array_equal(first, replaced)
+
+    def test_concentration_round_trip(self, tmp_path):
+        from qdot.io import (
+            create_mirrored_concentration_data,
+            load_mirrored_concentration_data,
+            mirror_array,
+        )
+
+        rng = np.random.default_rng(3)
+        conc = rng.uniform(0, 0.5, (10, 10))
+        np.save(tmp_path / "conc_data_to_scale_cubic_interpolation.npy", conc)
+
+        bounds = [0, 8, 0, 6]
+        create_mirrored_concentration_data(tmp_path, bounds, "right_left")
+        result = load_mirrored_concentration_data(tmp_path, bounds, "right_left")
+        np.testing.assert_allclose(result, mirror_array(conc[0:6, 0:8], "right_left"))
+
+
+# ---------------------------------------------------------------------------
+# NMR map archives
+# ---------------------------------------------------------------------------
+
+
+class TestNmrMapArchive:
+    _FIELDS = np.linspace(0.1, 2.0, 4)
+    _FREQS = np.linspace(1e6, 50e6, 6)
+    _LOCS = [(0, 0), (1, 1)]
+    _BOUNDS = [0, 2, 0, 2]
+
+    def _save(self, d, data, **kwargs):
+        from qdot.io import save_nmr_map
+
+        save_nmr_map(
+            d,
+            "Ga69",
+            "Faraday",
+            self._BOUNDS,
+            data,
+            self._FIELDS,
+            self._FREQS,
+            self._LOCS,
+            **kwargs,
+        )
+
+    def test_round_trip(self, tmp_path):
+        from qdot.io import load_nmr_map
+
+        data = np.random.default_rng(0).random((4, 6))
+        self._save(tmp_path, data)
+
+        loaded, fields, freqs, locs = load_nmr_map(
+            tmp_path, "Ga69", "Faraday", 2, self._BOUNDS, self._FIELDS, self._FREQS
+        )
+        np.testing.assert_allclose(loaded, data)
+        np.testing.assert_allclose(fields, self._FIELDS)
+        np.testing.assert_allclose(freqs, self._FREQS)
+        np.testing.assert_array_equal(locs, self._LOCS)
+
+    def test_skips_existing_unless_overwrite(self, tmp_path):
+        from qdot.io import load_nmr_map
+
+        first = np.ones((4, 6))
+        second = np.full((4, 6), 2.0)
+        self._save(tmp_path, first)
+        self._save(tmp_path, second)
+        loaded, *_ = load_nmr_map(
+            tmp_path, "Ga69", "Faraday", 2, self._BOUNDS, self._FIELDS, self._FREQS
+        )
+        np.testing.assert_allclose(loaded, first)
+
+        self._save(tmp_path, second, overwrite=True)
+        loaded, *_ = load_nmr_map(
+            tmp_path, "Ga69", "Faraday", 2, self._BOUNDS, self._FIELDS, self._FREQS
+        )
+        np.testing.assert_allclose(loaded, second)
+
+    def test_sundfors_variant_has_separate_file(self, tmp_path):
+        from qdot.io import load_nmr_map
+
+        self._save(tmp_path, np.ones((4, 6)))
+        self._save(tmp_path, np.full((4, 6), 3.0), use_sundfors=True)
+
+        standard, *_ = load_nmr_map(
+            tmp_path, "Ga69", "Faraday", 2, self._BOUNDS, self._FIELDS, self._FREQS
+        )
+        sundfors, *_ = load_nmr_map(
+            tmp_path,
+            "Ga69",
+            "Faraday",
+            2,
+            self._BOUNDS,
+            self._FIELDS,
+            self._FREQS,
+            use_sundfors=True,
+        )
+        np.testing.assert_allclose(standard, np.ones((4, 6)))
+        np.testing.assert_allclose(sundfors, np.full((4, 6), 3.0))
