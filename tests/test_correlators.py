@@ -10,9 +10,10 @@ def _simple_hamiltonian():
     return faraday_hamiltonian(1.0, 0.1, 0.4, 1.5, 0.0, 0.0, 0.0)
 
 
-def test_spin_correlator_invalid_axis_returns_none():
+def test_spin_correlator_invalid_axis_raises():
     H = _simple_hamiltonian()
-    assert spin_correlator(0.0, H, "q") is None
+    with pytest.raises(ValueError, match="spin_axis"):
+        spin_correlator(0.0, H, "q")
 
 
 def test_spin_correlator_t0_equals_iz_squared_trace():

@@ -7,21 +7,21 @@ over all allowed transitions at each RF frequency.
 """
 
 import pathlib
+from itertools import permutations
 
 import numpy as np
 import scipy.constants as const
-from itertools import permutations
 
 from qdot.isotopes import species_dict
 from qdot.io import load_efg, SOKOLOV_DOT_REGION
-
-_VALID_SPECIES = frozenset(species_dict)
 from qdot.hamiltonians import (
     faraday_hamiltonian,
     voigt_hamiltonian,
     rf_hamiltonian,
     transition_rate,
 )
+
+_VALID_SPECIES = frozenset(species_dict)
 
 h = const.h
 e = const.e
@@ -35,6 +35,7 @@ def absorption_spectrum(
     location: tuple[int, int],
     data_dir: pathlib.Path | str,
     region_bounds: list[int] | None = None,
+    step_size: int = 1,
     rf_field: float = 5e-3,
     use_sundfors: bool = False,
 ) -> np.ndarray:
@@ -52,6 +53,7 @@ def absorption_spectrum(
         location (tuple): (x, y) lattice site indices into the EFG arrays.
         data_dir: Directory containing pre-computed EFG archives.
         region_bounds (list): [left, right, top, bottom]. Defaults to dot region.
+        step_size (int): Subsample interval the EFG archive was saved with.
         rf_field (float): RF field amplitude. Default 5 mT.
         use_sundfors (bool): Use Sundfors parameter set if True.
 
@@ -70,6 +72,7 @@ def absorption_spectrum(
         data_dir,
         nuclear_species,
         region_bounds,
+        step_size=step_size,
         use_sundfors=use_sundfors,
     )
 
@@ -103,17 +106,20 @@ def absorption_spectrum(
     eigenenergies = np.real_if_close(eigenvalues)
     index_list = np.arange(len(eigenenergies))
 
-    rates = np.zeros(len(rf_freq_list))
-    for r, rf_freq in enumerate(rf_freq_list):
-        for pair in permutations(index_list, 2):
-            rates[r] += transition_rate(
-                H_rf,
-                eigenvectors[pair[0]],
-                eigenvectors[pair[1]],
-                eigenenergies[pair[0]],
-                eigenenergies[pair[1]],
-                rf_freq,
-            )
+    # Each pair's matrix element is independent of the RF frequency, so compute
+    # it once per pair and let transition_rate broadcast over the whole
+    # frequency array.
+    rf_freqs = np.asarray(rf_freq_list)
+    rates = np.zeros(len(rf_freqs))
+    for pair in permutations(index_list, 2):
+        rates += transition_rate(
+            H_rf,
+            eigenvectors[pair[0]],
+            eigenvectors[pair[1]],
+            eigenenergies[pair[0]],
+            eigenenergies[pair[1]],
+            rf_freqs,
+        )
 
     return rates
 
@@ -126,6 +132,7 @@ def varied_field_spectra(
     location: tuple[int, int],
     data_dir: pathlib.Path | str,
     region_bounds: list[int] | None = None,
+    step_size: int = 1,
     rf_field: float = 5e-3,
     use_sundfors: bool = False,
 ) -> list[dict]:
@@ -140,6 +147,7 @@ def varied_field_spectra(
         location (tuple): (x, y) site index.
         data_dir: Directory containing pre-computed EFG archives.
         region_bounds (list): [left, right, top, bottom]. Defaults to dot region.
+        step_size (int): Subsample interval the EFG archive was saved with.
         rf_field (float): RF field amplitude. Default 5 mT.
         use_sundfors (bool): Use Sundfors parameter set if True.
 
@@ -158,6 +166,7 @@ def varied_field_spectra(
                 location,
                 data_dir,
                 region_bounds,
+                step_size=step_size,
                 rf_field=rf_field,
                 use_sundfors=use_sundfors,
             ),

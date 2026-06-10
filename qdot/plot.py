@@ -1,7 +1,9 @@
 """
 Visualisation functions for quantum dot simulation outputs.
 
-All functions return the matplotlib Figure so callers can customise or save.
+All functions return the matplotlib Figure. The figure is detached from the
+pyplot registry before returning, so use the object-oriented API
+(fig.savefig, fig.axes, ...) for further work with it.
 Pass save_path (str or Path) to save instead of displaying.
 """
 
@@ -114,7 +116,9 @@ def plot_strain_lattice(
     colours = np.array([colour_map[s] for s in simulated_species.flatten()])
 
     n_rows, n_cols = simulated_species.shape
-    box_size = n_rows + 2
+    # Box dimensions must match qdot.strain: width follows columns, height rows.
+    box_w = n_cols + 2
+    box_h = n_rows + 2
 
     fig, ax = plt.subplots()
 
@@ -125,13 +129,13 @@ def plot_strain_lattice(
                 if c + 1 < n_cols:
                     x_r, y_r = positions[r, c + 1]
                 else:
-                    x_r = box_size
-                    y_r = (r + 1) * box_size / (n_rows + 1)
+                    x_r = box_w
+                    y_r = (r + 1) * box_h / (n_rows + 1)
                 if r + 1 < n_rows:
                     x_u, y_u = positions[r + 1, c]
                 else:
-                    x_u = (c + 1) * box_size / (n_cols + 1)
-                    y_u = box_size
+                    x_u = (c + 1) * box_w / (n_cols + 1)
+                    y_u = box_h
                 ax.plot([x, x_r], [y, y_r], "k--", alpha=alpha)
                 ax.plot([x, x_u], [y, y_u], "k--", alpha=alpha)
 
@@ -157,8 +161,8 @@ def plot_strain_lattice(
         ]
 
     ax.legend(handles=legend)
-    ax.set_xlim(0, box_size)
-    ax.set_ylim(0, box_size)
+    ax.set_xlim(0, box_w)
+    ax.set_ylim(0, box_h)
     ax.set_xticks([])
     ax.set_yticks([])
     ax.tick_params(

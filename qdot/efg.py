@@ -28,13 +28,15 @@ def euler_angles_from_rot_mat(rot_mat: np.ndarray) -> tuple[float, float, float]
     Returns:
         alpha, beta, gamma (float): Euler angles in radians.
     """
-    if rot_mat[2, 0] != 1 and rot_mat[2, 0] != -1:
-        beta = -np.arcsin(rot_mat[2, 0])
+    r20 = rot_mat[2, 0]
+    if np.abs(r20) < 1.0:
+        beta = -np.arcsin(r20)
         alpha = np.arctan2(rot_mat[2, 1] / np.cos(beta), rot_mat[2, 2] / np.cos(beta))
         gamma = np.arctan2(rot_mat[1, 0] / np.cos(beta), rot_mat[0, 0] / np.cos(beta))
     else:
+        # |r20| >= 1 (gimbal lock; rounding can push it just past ±1)
         gamma = 0.0
-        if rot_mat[2, 0] == -1:
+        if r20 < 0:
             beta = np.pi / 2
             alpha = gamma + np.arctan2(rot_mat[0, 1], rot_mat[0, 2])
         else:
@@ -226,7 +228,8 @@ def calculate_efg_vectorised(
     # Step 4 — biaxiality η = (V_XX − V_YY) / V_ZZ.
     # Undefined where V_ZZ = 0 (no strain → no EFG).
     # ------------------------------------------------------------------
-    eta = np.where(V_ZZ != 0, (V_XX - V_YY) / V_ZZ, np.nan)
+    eta = np.full_like(V_ZZ, np.nan)
+    np.divide(V_XX - V_YY, V_ZZ, out=eta, where=V_ZZ != 0)
 
     # ------------------------------------------------------------------
     # Step 5 — assemble rotation matrices.

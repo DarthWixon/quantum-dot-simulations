@@ -14,7 +14,7 @@ Python 3.10 or later is required. Install the package in editable mode from the 
 pip install -e ".[dev]"
 ```
 
-> **Note:** The strain simulation requires `scipy<1.11`. Changes to `scipy.optimize` in 1.11 break the energy minimisation.
+> **Note:** Earlier versions of the strain simulation required `scipy<1.11` because of `scipy.optimize` changes in 1.11. The current vectorised energy minimisation works on modern scipy (the test suite passes on 1.17), and the package now requires `scipy>=1.11`. Dependencies are declared in `pyproject.toml`; there is no separate requirements file.
 
 ---
 

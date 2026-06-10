@@ -33,8 +33,8 @@ def state_constructor(n_photons: int) -> np.ndarray:
 
 # Unused — scaffolding for the incomplete density-matrix extension.
 def state_to_density_matrix(state: np.ndarray) -> np.ndarray:
-    """Convert a state vector to a density matrix via outer product."""
-    return np.outer(state, state)
+    """Convert a state vector to a density matrix via outer product |ψ⟩⟨ψ|."""
+    return np.outer(state, state.conj())
 
 
 def single_qubit_operation(
@@ -182,13 +182,13 @@ def machine_gun_with_pauli_errors(
 
     R_y = expm(-1j * np.pi / 4 * Pauli_Y)
     dot_rotator = single_qubit_operation(R_y, n_photons + 1, 1)
-    total = single_qubit_operation(R_y, n_photons + 1, 1)
+    total = dot_rotator
 
     for i in range(n_photons):
         cnot = controlled_unitary(n_photons, i + 1)
         if errors_array[i, 0] == 1:
             error_mat = single_qubit_operation(
-                error_ops[errors_array[i, 1]], n_photons + 1, 1
+                error_ops[int(errors_array[i, 1])], n_photons + 1, 1
             )
         else:
             error_mat = np.eye(2 ** (n_photons + 1))

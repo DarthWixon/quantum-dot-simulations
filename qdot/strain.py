@@ -9,9 +9,10 @@ Species encoding: 0 = Ga, 1 = As, 2 = In
 """
 
 import math
+import time
+
 import numpy as np
 import scipy.optimize as opt
-from scipy.spatial import distance_matrix as scipy_distance_matrix
 
 # ---------------------------------------------------------------------------
 # Bond parameters
@@ -429,6 +430,39 @@ def strain_tensor_vectorised(
 # ---------------------------------------------------------------------------
 
 
+def _row_col_lengths(
+    lengths: np.ndarray, n_rows: int, n_cols: int
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Total spring length along each row and each column.
+
+    Horizontal springs for row r sit at odd indices 2*(n_cols+1)*r + 2*c + 1
+    for c in [0, n_cols]; vertical springs for column c sit at even indices
+    2*(n_rows+1)*c + 2*r for r in [0, n_rows]. Both include the wall springs.
+    """
+    row_lengths = np.array(
+        [
+            np.sum(
+                lengths[
+                    2 * (n_cols + 1) * r + 1 : 2 * (n_cols + 1) * r + 2 * n_cols + 2 : 2
+                ]
+            )
+            for r in range(n_rows)
+        ]
+    )
+    col_lengths = np.array(
+        [
+            np.sum(
+                lengths[
+                    2 * (n_rows + 1) * c : 2 * (n_rows + 1) * c + 2 * n_rows + 1 : 2
+                ]
+            )
+            for c in range(n_cols)
+        ]
+    )
+    return row_lengths, col_lengths
+
+
 def run_strain_simulation(
     n_rows: int,
     n_cols: int,
@@ -455,8 +489,6 @@ def run_strain_simulation(
         avg_row_diff (float): Average row-length deviation (%).
         avg_col_diff (float): Average column-length deviation (%).
     """
-    import time
-
     box_h = n_rows + 2
     box_w = n_cols + 2
 
@@ -488,21 +520,7 @@ def run_strain_simulation(
     time_taken = np.around(t1 - t0, decimal_places)
 
     lengths = _positions_to_spring_lengths(strained, box_w, box_h, n_rows, n_cols)
-    n_s = _n_springs(n_rows, n_cols)
-    row_lengths = np.array(
-        [
-            np.sum(
-                lengths[1 + 2 * r * n_cols : 1 + 2 * r * n_cols + 2 * n_cols + 1 : 2]
-            )
-            for r in range(n_rows)
-        ]
-    )
-    col_lengths = np.array(
-        [
-            np.sum(lengths[2 * c * n_rows : 2 * c * n_rows + 2 * n_rows + 1 : 2])
-            for c in range(n_cols)
-        ]
-    )
+    row_lengths, col_lengths = _row_col_lengths(lengths, n_rows, n_cols)
     avg_row_diff = np.around(
         (np.sqrt(np.sum((row_lengths - box_w) ** 2)) / n_rows) * 100 / box_w,
         decimal_places,
