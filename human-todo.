@@ -19,3 +19,16 @@ The In-block scenario produces peak |ε_xz| at ~30% of the diagonal strain, form
 ## EFG species comparison — stale docstring
 
 `examples/efg_species_comparison.py` module docstring says "plots V_ZZ, η, and β" but the β row was dropped. Trivial fix; left here to avoid distraction during active review work.
+
+## Sundfors (1974) parameter set — possible transcription errors
+
+In `qdot/isotopes.py`, the `old_species_dict` entries look suspect against the current set:
+
+- `Ga_69_Old` has S11 = 2.73e22, S44 = −2.76e22 — almost exactly the Ga_71 values, while the current Checkhovich Ga69 S11 is negative (−2.2e22). A copy-paste from Ga71 seems plausible.
+- `Ga_71_Old` and `In_115_Old` are identical to the current Checkhovich entries, so `use_sundfors=True` only changes Ga69 and As75. That may be correct if Sundfors values for those species coincide (or were never re-measured), but it is worth confirming.
+
+Please check S11/S44 for all four species against Sundfors (1974) and correct `old_species_dict` if needed.
+
+## Spin correlator time evolution — factor of 2π?
+
+`qdot/correlators.py` `spin_correlator` evolves with `exp(±i·t·H)` where H is built from frequencies in Hz (`zeeman_frequency_per_tesla`, quadrupolar coupling in Hz). If those are ordinary (cyclic) frequencies, the propagator should be `exp(±i·2π·f·t)`, i.e. a 2π is missing and all correlator timescales are stretched by 2π. If the stored values are meant as angular frequencies, the docstrings saying "Hz" should be corrected instead. Needs a decision on the intended convention; not changed in code since it rescales all published-comparison timescales.

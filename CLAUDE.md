@@ -26,13 +26,13 @@ git checkout -b <branch-name>
 
 ## Setup
 
-Install the package in editable mode (requires Python 3.9+):
+Install the package in editable mode (requires Python 3.10+):
 
 ```bash
 pip install -e ".[dev]"
 ```
 
-Key constraint: `scipy<1.11` — changes to `scipy.optimize` in 1.11 break the strain simulation's energy minimisation.
+Dependencies are declared in `pyproject.toml` only. The historical `scipy<1.11` pin no longer applies — the vectorised strain energy minimisation works on modern scipy (verified on 1.17, full test suite).
 
 Run tests:
 

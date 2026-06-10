@@ -7,9 +7,16 @@ from qdot.hamiltonians import (
     rf_hamiltonian,
     transition_rate,
 )
-from qdot.correlators import site_correlator, run_correlator_series
+from qdot.correlators import (
+    spin_correlator,
+    site_correlator,
+    run_correlator_series,
+    run_log_correlator_simulation,
+    run_linear_correlator_simulation,
+)
 from qdot.io import (
     load_strain_data,
+    load_mirrored_data,
     load_efg,
     save_efg,
     load_concentration_data,
@@ -34,10 +41,14 @@ __all__ = [
     "rf_hamiltonian",
     "transition_rate",
     # correlators
+    "spin_correlator",
     "site_correlator",
     "run_correlator_series",
+    "run_log_correlator_simulation",
+    "run_linear_correlator_simulation",
     # io
     "load_strain_data",
+    "load_mirrored_data",
     "load_efg",
     "save_efg",
     "load_concentration_data",

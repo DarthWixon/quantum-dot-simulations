@@ -95,4 +95,4 @@ def non_dephased_polarisation(q0: float, phase: float) -> float:
     initial_vec = qutip.superoperator.operator_to_vector(initial_dm)
     pulse_op = pulse_kraus_operator(q0, phase)
     final_dm = qutip.superoperator.vector_to_operator(pulse_op * initial_vec)
-    return np.real_if_close(z_polarisation(final_dm))
+    return float(np.real_if_close(z_polarisation(final_dm)))

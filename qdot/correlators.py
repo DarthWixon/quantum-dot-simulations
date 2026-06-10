@@ -25,9 +25,7 @@ _VALID_SPECIES = frozenset(species_dict)
 logger = logging.getLogger(__name__)
 
 
-def spin_correlator(
-    t: float, nuclear_hamiltonian: qutip.Qobj, spin_axis: str
-) -> float | None:
+def spin_correlator(t: float, nuclear_hamiltonian: qutip.Qobj, spin_axis: str) -> float:
     """
     Time correlation function <I_α(t) I_α(0)> for a single nuclear spin.
 
@@ -39,10 +37,13 @@ def spin_correlator(
         spin_axis (str): "x", "y", or "z".
 
     Returns:
-        float: Correlator value, or None if spin_axis is invalid.
+        float: Correlator value.
+
+    Raises:
+        ValueError: If spin_axis is not "x", "y", or "z".
     """
     if spin_axis not in ("x", "y", "z"):
-        return None
+        raise ValueError(f"spin_axis must be 'x', 'y', or 'z', got {spin_axis!r}")
 
     particle_spin = (nuclear_hamiltonian.dims[0][0] - 1) / 2
     I_alpha = qutip.jmat(particle_spin, spin_axis)
@@ -53,7 +54,7 @@ def spin_correlator(
     U_minus = (-exponent).expm()
     rho = qutip.qeye(dim) / dim
 
-    return np.real_if_close((U_plus * I_alpha * U_minus * I_alpha * rho).tr())
+    return float(np.real_if_close((U_plus * I_alpha * U_minus * I_alpha * rho).tr()))
 
 
 def site_correlator(
@@ -123,16 +124,13 @@ def _parallel_site_correlator(
     return spin_correlator(t, H, spin_axis)
 
 
-def _build_starmap_args(
-    t: float,
-    applied_field: float,
-    spin_axis: str,
+def _load_site_params(
+    data_dir: pathlib.Path | str,
     nuclear_species: str,
     region_bounds: list[int],
-    data_dir: pathlib.Path | str,
     step_size: int,
-) -> tuple[int, list[tuple]]:
-    """Package per-site parameters into a list suitable for Pool.starmap."""
+) -> dict:
+    """Load per-site EFG data and species constants once, for reuse across times/axes."""
     eta, _, _, V_ZZ_arr, euler_angles = load_efg(
         data_dir, nuclear_species, region_bounds, step_size
     )
@@ -140,29 +138,42 @@ def _build_starmap_args(
 
     species = species_dict[nuclear_species]
     spin = species["particle_spin"]
-    zeeman_per_tesla = species["zeeman_frequency_per_tesla"]
     Q = species["quadrupole_moment"]
     h, e = const.h, const.e
     qcc = (3 * e * Q) / (2 * h * spin * (2 * spin - 1))
 
-    n_sites = eta.size
-    biaxiality_list = eta.flatten()
-    V_ZZ_list = V_ZZ_arr.flatten()
-    alpha_list = euler_angles[:, 0]
-    beta_list = euler_angles[:, 1]
-    gamma_list = euler_angles[:, 2]
+    return {
+        "n_sites": eta.size,
+        "spin": spin,
+        "zeeman_per_tesla": species["zeeman_frequency_per_tesla"],
+        "qcc": qcc,
+        "biaxiality_list": eta.flatten(),
+        "V_ZZ_list": V_ZZ_arr.flatten(),
+        "alpha_list": euler_angles[:, 0],
+        "beta_list": euler_angles[:, 1],
+        "gamma_list": euler_angles[:, 2],
+    }
 
-    return n_sites, list(
+
+def _build_starmap_args(
+    t: float,
+    applied_field: float,
+    spin_axis: str,
+    site_params: dict,
+) -> list[tuple]:
+    """Package per-site parameters into a list suitable for Pool.starmap."""
+    n_sites = site_params["n_sites"]
+    return list(
         zip(
             np.full(n_sites, t),
-            np.full(n_sites, zeeman_per_tesla),
-            np.full(n_sites, qcc),
-            np.full(n_sites, spin),
-            biaxiality_list,
-            alpha_list,
-            beta_list,
-            gamma_list,
-            V_ZZ_list,
+            np.full(n_sites, site_params["zeeman_per_tesla"]),
+            np.full(n_sites, site_params["qcc"]),
+            np.full(n_sites, site_params["spin"]),
+            site_params["biaxiality_list"],
+            site_params["alpha_list"],
+            site_params["beta_list"],
+            site_params["gamma_list"],
+            site_params["V_ZZ_list"],
             np.full(n_sites, applied_field),
             [spin_axis] * n_sites,
         )
@@ -201,25 +212,53 @@ def run_correlator_series(
             f"nuclear_species must be one of {sorted(_VALID_SPECIES)}, got {nuclear_species!r}"
         )
     results = np.zeros((3, len(timerange)))
+    site_params = _load_site_params(data_dir, nuclear_species, region_bounds, step_size)
 
     with multiprocessing.Pool() as pool:
         for c, axis in enumerate(["x", "y", "z"]):
             for t_idx, t in enumerate(timerange):
-                n_sites, args = _build_starmap_args(
-                    t,
-                    applied_field,
-                    axis,
-                    nuclear_species,
-                    region_bounds,
-                    data_dir,
-                    step_size,
-                )
+                args = _build_starmap_args(t, applied_field, axis, site_params)
                 site_values = pool.starmap(
                     _parallel_site_correlator, args, chunksize=chunksize
                 )
                 results[c, t_idx] = np.mean(site_values)
 
     return results
+
+
+def _run_all_species_simulation(
+    data_dir: pathlib.Path | str,
+    save_dir: pathlib.Path | str,
+    timerange: np.ndarray,
+    applied_field: float,
+    region_bounds: list[int],
+    step_size: int,
+    chunksize: int,
+    archive_name: str,
+) -> None:
+    """Run the correlator series for all four species and save one .npz archive."""
+    save_dir = pathlib.Path(save_dir)
+    species_list = ["Ga69", "Ga71", "As75", "In115"]
+    data = {}
+
+    for species in species_list:
+        data[species] = run_correlator_series(
+            data_dir,
+            timerange,
+            applied_field,
+            species,
+            region_bounds,
+            step_size,
+            chunksize,
+        )
+        logger.info("%s done.", species)
+
+    np.savez(
+        save_dir / archive_name,
+        timerange=timerange,
+        region_bounds=region_bounds,
+        **{f"{s}_data": data[s] for s in species_list},
+    )
 
 
 def run_log_correlator_simulation(
@@ -247,37 +286,25 @@ def run_log_correlator_simulation(
         step_size (int): Subsampling interval. Default 100.
         chunksize (int): Pool chunksize. Default 25.
     """
-    save_dir = pathlib.Path(save_dir)
-
     if region_bounds is None:
         region_bounds = SOKOLOV_DOT_REGION
+    region_bounds = list(region_bounds)
 
     timerange = np.logspace(min_time_exp, max_time_exp, n_times)
-    species_list = ["Ga69", "Ga71", "As75", "In115"]
-    data = {}
-
-    for species in species_list:
-        data[species] = run_correlator_series(
-            data_dir,
-            timerange,
-            applied_field,
-            species,
-            region_bounds,
-            step_size,
-            chunksize,
-        )
-        logger.info("%s done.", species)
-
     archive_name = (
         f"log_time_correlator_data_B{applied_field}T"
         f"_{n_times}pts_{10**min_time_exp:.0e}_{10**max_time_exp:.0e}s"
         f"_region{region_bounds}.npz"
     )
-    np.savez(
-        save_dir / archive_name,
-        timerange=timerange,
-        region_bounds=region_bounds,
-        **{f"{s}_data": data[s] for s in species_list},
+    _run_all_species_simulation(
+        data_dir,
+        save_dir,
+        timerange,
+        applied_field,
+        region_bounds,
+        step_size,
+        chunksize,
+        archive_name,
     )
 
 
@@ -306,35 +333,23 @@ def run_linear_correlator_simulation(
         step_size (int): Subsampling interval. Default 100.
         chunksize (int): Pool chunksize. Default 25.
     """
-    save_dir = pathlib.Path(save_dir)
-
     if region_bounds is None:
         region_bounds = SOKOLOV_DOT_REGION
+    region_bounds = list(region_bounds)
 
     timerange = np.arange(min_time, max_time, timestep)
-    species_list = ["Ga69", "Ga71", "As75", "In115"]
-    data = {}
-
-    for species in species_list:
-        data[species] = run_correlator_series(
-            data_dir,
-            timerange,
-            applied_field,
-            species,
-            region_bounds,
-            step_size,
-            chunksize,
-        )
-        logger.info("%s done.", species)
-
     archive_name = (
         f"linear_time_correlator_data_B{applied_field}T"
         f"_{min_time}_{max_time}s_dt{timestep}"
         f"_region{region_bounds}.npz"
     )
-    np.savez(
-        save_dir / archive_name,
-        timerange=timerange,
-        region_bounds=region_bounds,
-        **{f"{s}_data": data[s] for s in species_list},
+    _run_all_species_simulation(
+        data_dir,
+        save_dir,
+        timerange,
+        applied_field,
+        region_bounds,
+        step_size,
+        chunksize,
+        archive_name,
     )

@@ -123,6 +123,8 @@ def _efg_archive_path(
 ) -> pathlib.Path:
     """Build the canonical archive filename for a pre-computed EFG dataset."""
     data_dir = pathlib.Path(data_dir)
+    # Normalise so tuples and lists produce the same filename.
+    region_bounds = list(region_bounds)
     base = f"{nuclear_species}_calculation_results_for_region{region_bounds}_with_step_size_{step_size}"
     if not real_strain:
         base += f"_using_{mirror_type}_flipped_data"
@@ -144,12 +146,14 @@ def save_efg(
     use_sundfors: bool = False,
     real_strain: bool = True,
     mirror_type: str = "left_right",
+    overwrite: bool = False,
 ) -> None:
     """
     Save pre-computed EFG arrays to a .npz archive.
 
-    Skips silently if the archive already exists, matching the behaviour of
-    the original calculate_and_save_EFG.
+    If the archive already exists it is left untouched (a warning is logged),
+    matching the behaviour of the original calculate_and_save_EFG. Pass
+    overwrite=True to replace it.
 
     Args:
         data_dir: Directory to write the archive into.
@@ -160,6 +164,7 @@ def save_efg(
         use_sundfors (bool): True if the Sundfors parameter set was used.
         real_strain (bool): False if mirrored strain data was used.
         mirror_type (str): Mirror variant, only used when real_strain=False.
+        overwrite (bool): Replace an existing archive instead of skipping it.
     """
     path = _efg_archive_path(
         data_dir,
@@ -170,7 +175,8 @@ def save_efg(
         real_strain,
         mirror_type,
     )
-    if path.exists():
+    if path.exists() and not overwrite:
+        logger.warning("EFG archive already exists, not overwriting: %s", path)
         return
     np.savez(path, eta=eta, V_XX=V_XX, V_YY=V_YY, V_ZZ=V_ZZ, euler_angles=euler_angles)
     logger.info("Saved EFG archive: %s", path)

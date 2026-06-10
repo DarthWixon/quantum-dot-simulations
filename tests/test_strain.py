@@ -196,3 +196,70 @@ class TestRunStrainSimulation:
         in_pos = block_in_positions([2, 2], [5, 5])
         species, *_ = run_strain_simulation(9, 9, lattice_type=2, in_positions=in_pos)
         assert np.any(species == 2), "No Indium found in species array"
+
+
+# ---------------------------------------------------------------------------
+# Row/column length diagnostics
+# ---------------------------------------------------------------------------
+
+
+class TestRowColLengths:
+    """
+    _row_col_lengths must group springs by their actual row/column. A uniform
+    lattice cannot detect grouping mistakes (all springs are equal), so these
+    tests perturb the positions and compare against geometric sums.
+    """
+
+    @staticmethod
+    def _expected_sums(coords, n_rows, n_cols, box_w, box_h):
+        row_sums = np.zeros(n_rows)
+        for r in range(n_rows):
+            wall_y = (r + 1) * box_h / (n_rows + 1)
+            chain = [np.array([0.0, wall_y])]
+            chain += [coords[r, c] for c in range(n_cols)]
+            chain += [np.array([box_w, wall_y])]
+            row_sums[r] = sum(
+                np.linalg.norm(chain[i + 1] - chain[i]) for i in range(len(chain) - 1)
+            )
+
+        col_sums = np.zeros(n_cols)
+        for c in range(n_cols):
+            wall_x = (c + 1) * box_w / (n_cols + 1)
+            chain = [np.array([wall_x, 0.0])]
+            chain += [coords[r, c] for r in range(n_rows)]
+            chain += [np.array([wall_x, box_h])]
+            col_sums[c] = sum(
+                np.linalg.norm(chain[i + 1] - chain[i]) for i in range(len(chain) - 1)
+            )
+
+        return row_sums, col_sums
+
+    def test_matches_geometric_sums_non_square(self):
+        from qdot.strain import _positions_to_spring_lengths, _row_col_lengths
+
+        n_rows, n_cols = 2, 3
+        box_w, box_h = n_cols + 2, n_rows + 2
+        rng = np.random.default_rng(42)
+        coords = unstrained_positions(n_rows, n_cols) + rng.uniform(
+            -0.2, 0.2, (n_rows, n_cols, 2)
+        )
+
+        lengths = _positions_to_spring_lengths(coords, box_w, box_h, n_rows, n_cols)
+        row_lengths, col_lengths = _row_col_lengths(lengths, n_rows, n_cols)
+        exp_rows, exp_cols = self._expected_sums(coords, n_rows, n_cols, box_w, box_h)
+
+        np.testing.assert_allclose(row_lengths, exp_rows, rtol=1e-12)
+        np.testing.assert_allclose(col_lengths, exp_cols, rtol=1e-12)
+
+    def test_uniform_lattice_rows_equal_box_width(self):
+        from qdot.strain import _positions_to_spring_lengths, _row_col_lengths
+
+        n_rows, n_cols = 4, 4
+        box_w, box_h = n_cols + 2, n_rows + 2
+        coords = unstrained_positions(n_rows, n_cols)
+
+        lengths = _positions_to_spring_lengths(coords, box_w, box_h, n_rows, n_cols)
+        row_lengths, col_lengths = _row_col_lengths(lengths, n_rows, n_cols)
+
+        np.testing.assert_allclose(row_lengths, box_w)
+        np.testing.assert_allclose(col_lengths, box_h)
