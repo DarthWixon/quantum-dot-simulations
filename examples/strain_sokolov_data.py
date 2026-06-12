@@ -21,7 +21,7 @@ paper or the original researcher for access.
 
 Output
 ------
-Three PNG files in claude-test-graphs/ (if data is present):
+Three PNG files in outputs/examples/ (if data is present):
     strain_sokolov_full_region.png   — ε_xx, ε_xz, ε_zz across the full dot
     strain_sokolov_dot_only.png      — same components cropped to the dot
     strain_sokolov_shear_hist.png    — shear strain distribution in the dot
@@ -45,8 +45,8 @@ from qdot.io import load_strain_data
 # ---------------------------------------------------------------------------
 DATA_DIR = pathlib.Path("path/to/sokolov/data")
 
-OUTPUT_DIR = pathlib.Path("claude-test-graphs")
-OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR = pathlib.Path(__file__).resolve().parent.parent / "outputs" / "examples"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Two regions used throughout the original analysis.
 # [left, right, top, bottom] in pixel coordinates of the 1600×1600 source.

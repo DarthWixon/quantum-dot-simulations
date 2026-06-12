@@ -8,7 +8,7 @@ Two contrasting lattice sites are compared:
 Left panel: Faraday geometry (B along z).
 Right panel: Voigt geometry (B along x).
 
-Output: claude-test-graphs/spin_correlator.png
+Output: outputs/examples/spin_correlator.png
 """
 
 import pathlib
@@ -109,6 +109,6 @@ axes[0].set_ylabel(r"$\langle I_z(t)\, I_z(0) \rangle$")
 
 plt.tight_layout()
 
-output_dir = pathlib.Path(__file__).parent / "output"
-output_dir.mkdir(exist_ok=True)
+output_dir = pathlib.Path(__file__).resolve().parent.parent / "outputs" / "examples"
+output_dir.mkdir(parents=True, exist_ok=True)
 fig.savefig(output_dir / "spin_correlator.png", dpi=150)

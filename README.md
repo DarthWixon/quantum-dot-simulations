@@ -178,14 +178,14 @@ from qdot.correlators import run_log_correlator_simulation
 
 run_log_correlator_simulation(
     data_dir=DATA_DIR,
-    save_dir=pathlib.Path("output/"),
+    save_dir=pathlib.Path("outputs/"),
     min_time_exp=-7,
     max_time_exp=-3,
     n_times=50,
     applied_field=5.0,
     step_size=100,
 )
-# Writes output/log_time_correlator_data_B5.0T_50pts_1e-07_1e-03s_region[...].npz
+# Writes outputs/log_time_correlator_data_B5.0T_50pts_1e-07_1e-03s_region[...].npz
 ```
 
 ### NMR absorption spectra
@@ -255,7 +255,7 @@ import numpy as np
 import qdot
 from qdot import plot as qdplot
 
-OUTPUT_DIR = pathlib.Path("output/graphs")
+OUTPUT_DIR = pathlib.Path("outputs/graphs")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 ```
 
@@ -361,7 +361,12 @@ python examples/nff_polarisation.py
 python examples/strain_sokolov_data.py
 ```
 
-All example scripts save their output to `claude-test-graphs/` in the repository root.
+All generated output lives under `outputs/` in the repository root, organised by source:
+
+- `outputs/examples/` — figures from the `examples/` scripts
+- `outputs/full_pipeline/` — figures and EFG `.npz` archives from `run_full_pipeline.py`
+- `outputs/new_experiments/` — figures and cached maps from `run_new_experiments.py`
+- `outputs/benchmarks/` — benchmark results (the benchmarks currently print to stdout; save any files here)
 
 ---
 
