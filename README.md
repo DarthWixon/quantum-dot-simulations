@@ -6,12 +6,15 @@ The four nuclear species modelled are **Ga69, Ga71, As75, and In115**.
 
 ---
 
-Notes from the author (June 2026). 
+## Notes from the author (June 2026). 
+
 The work in this repository forms the basis of my PhD, conducted between 2016-2022 as part of the Quantum Engineering Centre for Doctoral Training, at Bristol University. My thesis is available [here](https://research-information.bris.ac.uk/ws/portalfiles/portal/339689294/william_dixon_thesis_final.pdf).
 At the time it was written and programmed, AI and LLMs were unavailable and did not play any part in the work originally. 
 
 In June 2026, my career had led me to a place where it became necessary to familiarise myself with LLMs and agentic coding assistants (as I suspect it will for all developers over the near future). In order to do that I decided to unleash Claude Code on this repo - it is code I understand well, and if it breaks nothing bad will happen.
+
 That has resulted in a large number of changes to this repo over a small period of time, almost all of which (with the exception of this section of the README) have been primarily written by AI. I'm pretty astonished by what it's mananged to do in that time - it has refactored the code and packaged it all according to my instructions. It has also added improvements such as vectorisation of key functions and huge amounts of testing.
+
 In so far as I can tell, these changes have maintained correctness of the underlying physics. If you wish to examine the code as it was when I completed my PhD, please take a look in the archive folder, where it lives in all it's low quality glory.
 
 ---
