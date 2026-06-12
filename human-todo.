@@ -29,6 +29,22 @@ In `qdot/isotopes.py`, the `old_species_dict` entries look suspect against the c
 
 Please check S11/S44 for all four species against Sundfors (1974) and correct `old_species_dict` if needed.
 
+## Experimental NMR simulation — species population heuristic
+
+`qdot.nmr.experimental_nmr_simulation` (ported from the archive's `experimental_NMR_sim`) splits the sampled sites as: In115 in proportion to the mean In concentration, As75 fixed at 50% (`arsenic_fraction` parameter), the remainder Ga69, with Ga71 excluded entirely ("only including Ga69 to begin with" in the original). Confirm or refine this heuristic — in particular whether Ga71 should be included at its natural abundance (~40% of Ga) and whether the As fraction should account for the cation/anion sublattice structure.
+
+## find_best_locations — strain metric
+
+`qdot.sites.find_best_locations` ranks sites by the plain component sum ε_xx + ε_xz + ε_zz (inherited from `random_point_searcher.py`). Signs can cancel and the trace-plus-shear combination has no obvious physical meaning. Decide whether a better metric (e.g. |K·V_ZZ|, or the EFG magnitude itself) should replace it.
+
+## Quadrupole frequency histograms — which distribution fits are meaningful
+
+`qdot.plot.plot_frequency_histogram` ports all three fits from the archive (Gaussian on signed frequencies; Maxwell-Boltzmann and gamma on magnitudes). Decide which are physically meaningful for the dot's frequency distribution and prune the rest.
+
+## NFF x/y polarisation — basis convention
+
+`qdot.nff.z_polarisation` measures Z via σx ("Z in the X basis"), but the archive's X/Y finders — now `x_polarisation`/`y_polarisation` — use plain σx/σy with no basis rotation, so `x_polarisation` is numerically identical to `z_polarisation`. Confirm what the X/Y measurements should be in the rotated frame and adjust the operators if needed.
+
 ## Spin correlator time evolution — factor of 2π?
 
 `qdot/correlators.py` `spin_correlator` evolves with `exp(±i·t·H)` where H is built from frequencies in Hz (`zeeman_frequency_per_tesla`, quadrupolar coupling in Hz). If those are ordinary (cyclic) frequencies, the propagator should be `exp(±i·2π·f·t)`, i.e. a 2π is missing and all correlator timescales are stretched by 2π. If the stored values are meant as angular frequencies, the docstrings saying "Hz" should be corrected instead. Needs a decision on the intended convention; not changed in code since it rescales all published-comparison timescales.

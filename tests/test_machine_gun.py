@@ -203,3 +203,96 @@ def test_machine_gun_with_errors_output_shape():
     errors = np.zeros((n, 2), dtype=int)
     op = machine_gun_with_pauli_errors(n, errors)
     assert op.shape == (2 ** (n + 1), 2 ** (n + 1))
+
+
+# ---------------------------------------------------------------------------
+# Density-matrix formulation with error channels
+# ---------------------------------------------------------------------------
+
+
+def test_initial_density_matrix_is_ground_state_projector():
+    from qdot.machine_gun import initial_density_matrix
+
+    dm = initial_density_matrix(2)
+    full = dm.full()
+    assert full.shape == (8, 8)
+    assert full[0, 0] == pytest.approx(1.0)
+    assert np.sum(np.abs(full)) == pytest.approx(1.0)
+
+
+def test_perfect_density_matrix_matches_state_vector_path():
+    from qdot.machine_gun import (
+        perfect_machine_gun_density_matrix,
+        operational_perfect_machine_gun,
+        state_to_density_matrix,
+    )
+
+    state = operational_perfect_machine_gun(2)
+    expected = state_to_density_matrix(state.flatten())
+    result = perfect_machine_gun_density_matrix(2).full()
+    np.testing.assert_allclose(result, expected, atol=1e-12)
+
+
+@pytest.mark.parametrize("channel", ["dephasing", "damping"])
+def test_zero_error_strength_matches_perfect(channel):
+    from qdot.machine_gun import noisy_machine_gun, perfect_machine_gun_density_matrix
+
+    noisy = noisy_machine_gun(2, channel, 0.0).full()
+    perfect = perfect_machine_gun_density_matrix(2).full()
+    np.testing.assert_allclose(noisy, perfect, atol=1e-12)
+
+
+@pytest.mark.parametrize("channel", ["dephasing", "damping"])
+@pytest.mark.parametrize("strength", [0.3, 0.7, 1.0])
+def test_noisy_machine_gun_preserves_trace(channel, strength):
+    from qdot.machine_gun import noisy_machine_gun
+
+    dm = noisy_machine_gun(2, channel, strength)
+    assert dm.tr() == pytest.approx(1.0, abs=1e-10)
+
+
+def test_invalid_channel_raises():
+    from qdot.machine_gun import noisy_machine_gun
+
+    with pytest.raises(ValueError, match="error_channel"):
+        noisy_machine_gun(2, "depolarising", 0.5)
+
+
+def test_fidelity_starts_at_one_and_decreases():
+    from qdot.machine_gun import fidelity_vs_error
+
+    strengths = np.array([0.0, 0.5, 1.0])
+    fidelities = fidelity_vs_error(2, strengths, "dephasing")
+    assert fidelities[0] == pytest.approx(1.0, abs=1e-6)
+    assert fidelities[-1] < fidelities[0]
+
+
+def test_trace_distance_starts_at_zero_and_increases():
+    from qdot.machine_gun import trace_distance_vs_error
+
+    strengths = np.array([0.0, 1.0])
+    distances = trace_distance_vs_error(2, strengths, "damping")
+    assert distances[0] == pytest.approx(0.0, abs=1e-6)
+    assert distances[-1] > distances[0]
+
+
+def test_error_list_to_array():
+    from qdot.machine_gun import error_list_to_array
+
+    result = error_list_to_array([(1, "Z"), (3, "X")], n_photons=3)
+    expected = np.array([[1, 4], [0, 0], [1, 2]])
+    np.testing.assert_array_equal(result, expected)
+
+
+def test_error_list_to_array_validates_label():
+    from qdot.machine_gun import error_list_to_array
+
+    with pytest.raises(ValueError, match="label"):
+        error_list_to_array([(1, "W")], n_photons=2)
+
+
+def test_error_list_to_array_validates_index():
+    from qdot.machine_gun import error_list_to_array
+
+    with pytest.raises(ValueError, match="photon_index"):
+        error_list_to_array([(3, "X")], n_photons=2)

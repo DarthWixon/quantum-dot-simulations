@@ -329,3 +329,35 @@ def test_euler_angles_reconstruct_rotation_all_species(species):
                 atol=1e-10,
                 err_msg=f"{species}: Euler reconstruction failed at ({i},{j})",
             )
+
+
+# ---------------------------------------------------------------------------
+# Quadrupole frequency and equivalent B field
+# ---------------------------------------------------------------------------
+
+
+def test_quadrupole_frequency_scales_with_coupling():
+    from qdot.efg import quadrupole_frequency
+    from qdot.isotopes import species_dict, quadrupole_coupling
+
+    V_ZZ = np.array([[1e20, 2e20], [3e20, -4e20]])
+    result = quadrupole_frequency("As75", V_ZZ)
+    expected = quadrupole_coupling(species_dict["As75"]) * V_ZZ
+    np.testing.assert_allclose(result, expected)
+
+
+def test_quadrupole_frequency_invalid_species_raises():
+    from qdot.efg import quadrupole_frequency
+
+    with pytest.raises(ValueError, match="nuclear_species"):
+        quadrupole_frequency("Fe56", np.ones((2, 2)))
+
+
+def test_equivalent_b_field_is_frequency_over_zeeman():
+    from qdot.efg import quadrupole_frequency, equivalent_b_field
+    from qdot.isotopes import species_dict
+
+    V_ZZ = np.array([[1e20, 5e20]])
+    freq = quadrupole_frequency("In115", V_ZZ)
+    expected = freq / species_dict["In115"]["zeeman_frequency_per_tesla"]
+    np.testing.assert_allclose(equivalent_b_field("In115", V_ZZ), expected)

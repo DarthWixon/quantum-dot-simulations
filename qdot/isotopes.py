@@ -18,6 +18,8 @@ Two parameter sets are provided:
 
 from typing import TypedDict
 
+import scipy.constants as const
+
 
 class SpeciesParameters(TypedDict):
     short_name: str
@@ -117,6 +119,25 @@ As_75_Old = {
     "S11": 3.96e22,
     "S44": 7.94e22,
 }
+
+
+def quadrupole_coupling(species: SpeciesParameters) -> float:
+    """
+    Quadrupole coupling constant K = 3eQ / (2hI(2I-1)).
+
+    Multiplying K by the principal EFG component V_ZZ gives the quadrupolar
+    frequency in Hz.
+
+    Args:
+        species (SpeciesParameters): One entry of species_dict / old_species_dict.
+
+    Returns:
+        float: Coupling constant in Hz per V·m⁻².
+    """
+    spin = species["particle_spin"]
+    Q = species["quadrupole_moment"]
+    return (3 * const.e * Q) / (2 * const.h * spin * (2 * spin - 1))
+
 
 species_dict: dict[str, SpeciesParameters] = {
     "Ga69": Ga_69,

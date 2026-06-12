@@ -8,6 +8,8 @@ the Zeeman and quadrupolar terms should be passed in the same units.
 import numpy as np
 import qutip
 
+from qdot.isotopes import species_dict, quadrupole_coupling
+
 
 def spin_rotator(
     alpha: float, beta: float, gamma: float, initial_spin: qutip.Qobj
@@ -202,3 +204,108 @@ def transition_rate(
     prob = np.abs(mixing_hamiltonian.matrix_element(final_state, init_state)) ** 2
     lorentzian = (2 * delta) / ((E_final - E_init - omega_rf) ** 2 + delta**2)
     return np.real_if_close(prob * lorentzian)
+
+
+def energy_levels_vs_field(
+    nuclear_species: str,
+    applied_fields: np.ndarray,
+    biaxiality: float,
+    V_ZZ: float,
+    euler_angles: tuple[float, float, float],
+    field_geometry: str = "Faraday",
+) -> np.ndarray:
+    """
+    Eigenenergies of the nuclear spin Hamiltonian swept over applied field.
+
+    Builds the Zeeman + quadrupolar Hamiltonian for one site at each field in
+    applied_fields and collects the sorted eigenenergies, producing the data
+    for an anti-crossing energy level diagram.
+
+    Args:
+        nuclear_species (str): One of "Ga69", "Ga71", "As75", "In115".
+        applied_fields (ndarray): Magnetic fields to sweep, in Tesla.
+        biaxiality (float): EFG biaxiality η at the site.
+        V_ZZ (float): Principal EFG component at the site (V·m⁻²).
+        euler_angles (tuple): (alpha, beta, gamma) to the PAF, in radians.
+        field_geometry (str): "Faraday" or "Voigt".
+
+    Returns:
+        ndarray: Eigenenergies in Hz, shape (n_levels, n_fields).
+    """
+    species = species_dict[nuclear_species]
+    spin = species["particle_spin"]
+    quadrupolar_term = quadrupole_coupling(species) * V_ZZ
+    alpha, beta, gamma = euler_angles
+
+    constructor = _geometry_constructor(field_geometry)
+
+    n_levels = int(2 * spin + 1)
+    levels = np.zeros((n_levels, len(applied_fields)))
+    for i, field in enumerate(applied_fields):
+        H = constructor(
+            species["zeeman_frequency_per_tesla"] * field,
+            quadrupolar_term,
+            biaxiality,
+            spin,
+            alpha,
+            beta,
+            gamma,
+        ).tidyup()
+        # H is Hermitian; rounding can leave negligible imaginary parts.
+        levels[:, i] = np.real(np.real_if_close(H.eigenenergies()))
+    return levels
+
+
+def energy_levels_vs_eta(
+    nuclear_species: str,
+    eta_values: np.ndarray,
+    applied_field: float = 0.0,
+    V_ZZ: float = 5e20,
+    euler_angles: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    field_geometry: str = "Faraday",
+) -> np.ndarray:
+    """
+    Eigenenergies of the nuclear spin Hamiltonian swept over biaxiality η.
+
+    Useful for understanding the quadrupolar interaction in isolation
+    (applied_field defaults to 0). The default V_ZZ of 5e20 V·m⁻² is
+    approximately the mean over the Sokolov dot region.
+
+    Args:
+        nuclear_species (str): One of "Ga69", "Ga71", "As75", "In115".
+        eta_values (ndarray): Biaxiality values to sweep.
+        applied_field (float): Static magnetic field in Tesla. Default 0.
+        V_ZZ (float): Principal EFG component (V·m⁻²).
+        euler_angles (tuple): (alpha, beta, gamma) to the PAF, in radians.
+        field_geometry (str): "Faraday" or "Voigt".
+
+    Returns:
+        ndarray: Eigenenergies in Hz, shape (n_levels, n_eta).
+    """
+    species = species_dict[nuclear_species]
+    spin = species["particle_spin"]
+    quadrupolar_term = quadrupole_coupling(species) * V_ZZ
+    zeeman_term = species["zeeman_frequency_per_tesla"] * applied_field
+    alpha, beta, gamma = euler_angles
+
+    constructor = _geometry_constructor(field_geometry)
+
+    n_levels = int(2 * spin + 1)
+    levels = np.zeros((n_levels, len(eta_values)))
+    for i, eta in enumerate(eta_values):
+        H = constructor(
+            zeeman_term, quadrupolar_term, eta, spin, alpha, beta, gamma
+        ).tidyup()
+        levels[:, i] = np.real(np.real_if_close(H.eigenenergies()))
+    return levels
+
+
+def _geometry_constructor(field_geometry: str):
+    """Map a geometry name onto the corresponding Hamiltonian constructor."""
+    if field_geometry == "Faraday":
+        return faraday_hamiltonian
+    if field_geometry == "Voigt":
+        return voigt_hamiltonian
+    raise ValueError(
+        f"field_geometry must be 'Faraday' or 'Voigt', got {field_geometry!r}"
+    )
