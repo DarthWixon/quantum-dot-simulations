@@ -2,7 +2,6 @@ data/
 graphs/
 testing
 real_data/
-real-data-outputs/
 .venv/
 *.png
 *.npz
@@ -11,6 +10,9 @@ real-data-outputs/
 __pycache__/
 *.pyc
 *.egg-info/
+.DS_Store
+.pytest_cache/
 
-# Generated experiment outputs (graphs and cached maps)
-new_data_outputs/
+# Generated outputs: outputs/examples/, outputs/full_pipeline/,
+# outputs/new_experiments/, outputs/benchmarks/
+outputs/

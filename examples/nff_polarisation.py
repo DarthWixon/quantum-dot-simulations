@@ -7,7 +7,7 @@ Two panels:
   Right — z-polarisation in the zero-dephasing limit as the pulse phase
            sweeps 0 → 2π.
 
-Output: examples/output/nff_polarisation.png
+Output: outputs/examples/nff_polarisation.png
 """
 
 import pathlib
@@ -49,6 +49,6 @@ ax_right.set_xticklabels(["0", r"$\pi/2$", r"$\pi$", r"$3\pi/2$", r"$2\pi$"])
 
 plt.tight_layout()
 
-output_dir = pathlib.Path(__file__).parent / "output"
-output_dir.mkdir(exist_ok=True)
+output_dir = pathlib.Path(__file__).resolve().parent.parent / "outputs" / "examples"
+output_dir.mkdir(parents=True, exist_ok=True)
 fig.savefig(output_dir / "nff_polarisation.png", dpi=150)

@@ -6,7 +6,7 @@ lattice configurations. Run from the repo root:
 
     python examples/strain_toy_model.py
 
-Output: six PNG files in claude-test-graphs/
+Output: six PNG files in outputs/examples/
 
 Physics background
 ------------------
@@ -37,8 +37,8 @@ import numpy as np
 from qdot.strain import run_strain_simulation, strain_tensor, block_in_positions
 from qdot.plot import plot_strain_lattice, plot_strain_tensors
 
-OUTPUT_DIR = pathlib.Path("claude-test-graphs")
-OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR = pathlib.Path(__file__).resolve().parent.parent / "outputs" / "examples"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # 15×15 gives good visual resolution in a few seconds.
 N = 15

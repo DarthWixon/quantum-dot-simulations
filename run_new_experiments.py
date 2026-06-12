@@ -2,9 +2,10 @@
 Run the newly ported experiments against the real Sokolov dataset.
 
 Reads strain/concentration data from real_data/ and the pre-computed EFG
-archives from real-data-outputs/efg/, and writes every figure to
-new_data_outputs/. EFG archives and the concentration file are symlinked
-into new_data_outputs/work/ so the NMR functions see one data directory.
+archives from outputs/full_pipeline/efg/, and writes every figure to
+outputs/new_experiments/. EFG archives and the concentration file are
+symlinked into outputs/new_experiments/work/ so the NMR functions see one
+data directory.
 
 Sizes are chosen to finish in a few minutes on a laptop; raise N_FIELDS /
 N_FREQS / site counts for publication-quality versions.
@@ -25,8 +26,8 @@ from qdot import plot
 
 REPO = pathlib.Path(__file__).parent
 REAL_DATA = REPO / "real_data"
-EFG_DIR = REPO / "real-data-outputs" / "efg"
-OUT = REPO / "new_data_outputs"
+EFG_DIR = REPO / "outputs" / "full_pipeline" / "efg"
+OUT = REPO / "outputs" / "new_experiments"
 WORK = OUT / "work"
 
 REGION = qdot.SOKOLOV_DOT_REGION  # [100, 1200, 439, 880] -> arrays (441, 1100)

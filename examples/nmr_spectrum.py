@@ -9,7 +9,7 @@ constants, without pre-computed EFG files. Two panels are produced:
             encodes intensity. This is the type of plot experimentalists use
             to identify and track resonance lines as a function of field.
 
-Output: claude-test-graphs/nmr_spectrum.png
+Output: outputs/examples/nmr_spectrum.png
 
 Physics
 -------
@@ -67,8 +67,8 @@ FIELD_SWEEP = np.linspace(1.0, 8.0, 10)  # T — for the right panel
 FREQ_HALF_SPAN = 5.0e6  # Hz each side of the Larmor frequency
 N_FREQ = 500
 
-OUTPUT_DIR = pathlib.Path(__file__).parent / "output"
-OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR = pathlib.Path(__file__).resolve().parent.parent / "outputs" / "examples"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ---------------------------------------------------------------------------
